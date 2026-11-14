@@ -42,17 +42,62 @@ the filter) and `esc` (close) work.
 
 ## Default keybindings
 
-The most-used defaults are below. `?` shows the complete live list (including
-list-filter bindings), while `sltty keys` prints every configurable action and
-its defaults as JSON.
+This is the complete reference for the defaults printed by `sltty keys`. The
+**Action ID** is the name to use under `keys` in the config file. Bindings are
+scoped: a key in **NORMAL** can mean something different while typing in
+**INSERT** or in a list's **FILTER**.
 
-| Area | Keys | Action ID / effect |
-| --- | --- | --- |
-| Move | `h` / `l`, `j` / `k` | `focus_left` / `focus_right`, `down` / `up` |
-| Move | `ctrl+k` or `ctrl+p` | `switcher` |
-| Find | `ctrl+f`, `/`, `n` / `N` | `search`, `filter`, next / previous match |
-| Messages | `enter`, `r`, `R`, `e`, `u`, `v`, `o` | open, react, reactions, edit, read/unread, view picture, links |
-| Compose | `i` or `a`, `enter`, `shift+enter` | insert, send, new line |
-| Compose | `esc`, `ctrl+c`, `j k` | `normal_mode` (leave INSERT) |
-| Layout | `T`, `L`, `I`, `;`, `ctrl+s`, `+` / `-` | theme, layout, images, settings, status, composer size |
-| General | `?`, `:`, `q` | keybindings, command line, back / quit |
+| Area | Mode | Action ID | Default keys | Effect |
+| --- | --- | --- | --- | --- |
+| Move around | NORMAL | `focus_left` | `h`, `left`, `shift+tab` | pane on the left |
+| Move around | NORMAL | `focus_right` | `l`, `right` | pane on the right |
+| Move around | NORMAL | `toggle_sidebar_chat` | `tab` | sidebar ⇄ chat |
+| Move around | NORMAL | `down` | `j`, `down` | down |
+| Move around | NORMAL | `up` | `k`, `up` | up |
+| Move around | NORMAL | `page_down` | `ctrl+d` | five down |
+| Move around | NORMAL | `page_up` | `ctrl+u` | five up |
+| Move around | NORMAL | `top` | `g g`, `home` | first |
+| Move around | NORMAL | `bottom` | `G`, `end` | last |
+| Move around | NORMAL | `next_chat` | `J` | next chat, from any pane |
+| Move around | NORMAL | `prev_chat` | `K` | previous chat |
+| Move around | NORMAL | `switcher` | `ctrl+k`, `ctrl+p` | jump to a conversation |
+| Move around | NORMAL | `search` | `ctrl+f` | search messages |
+| Move around | NORMAL | `filter` | `/` | find chats in the sidebar, messages elsewhere |
+| Move around | NORMAL | `next_match` | `n` | next search result (older) |
+| Move around | NORMAL | `prev_match` | `N` | previous search result |
+| Move around | NORMAL | `toggle_section` | `space`, `z a` | fold / unfold the sidebar section |
+| Messages | NORMAL | `open` | `enter`, `t` | open the chat / the thread |
+| Messages | NORMAL | `reply` | — | reply in the thread |
+| Messages | NORMAL | `react` | `r` | add or remove a reaction |
+| Messages | NORMAL | `reactions` | `R` | show who reacted |
+| Messages | NORMAL | `edit` | `e` | edit your message |
+| Messages | NORMAL | `toggle_read` | `u` | mark read / unread from here |
+| Messages | NORMAL | `links` | `o` | list the message's links |
+| Messages | NORMAL | `view_picture` | `v` | view the message's picture full size |
+| Messages | NORMAL | `insert` | `i`, `a` | write (INSERT mode) |
+| Messages | NORMAL | `back` | `esc`, `x` | back, close |
+| INSERT mode | INSERT | `send` | `enter` | send / save the edit |
+| INSERT mode | INSERT | `newline` | `shift+enter`, `alt+enter`, `ctrl+j` | new line |
+| INSERT mode | INSERT | `normal_mode` | `esc`, `ctrl+c`, `j k` | back to NORMAL |
+| INSERT mode | INSERT | `edit_last` | `up` | edit your last message |
+| Lists | FILTER | `picker_down` | `ctrl+n`, `ctrl+j`, `down` | next while filtering |
+| Lists | FILTER | `picker_up` | `ctrl+p`, `ctrl+k`, `up` | previous while filtering |
+| Lists | FILTER | `picker_select` | `enter` | pick |
+| Lists | FILTER | `search_scope` | `tab` | search here ⇄ everywhere |
+| Layout | NORMAL | `divider_left` | `<` | move the divider left |
+| Layout | NORMAL | `divider_right` | `>` | move the divider right |
+| Layout | NORMAL | `divider_reset` | `=` | reset the widths |
+| Layout | NORMAL | `theme` | `T` | pick a theme |
+| Layout | NORMAL | `layout` | `L` | slack / panels layout |
+| Layout | NORMAL | `images_toggle` | `I` | images and custom emoji on / off |
+| Layout | NORMAL | `help` | `?` | this help |
+| Layout | NORMAL | `settings` | `;` | settings: theme, layout, clock, images, sizes |
+| Layout | NORMAL | `status` | `ctrl+s` | set active, away, or Do Not Disturb |
+| Layout | NORMAL | `command` | `:` | command line (`:help`, `:find`, `:version`…) |
+| Layout | NORMAL | `composer_taller` | `+` | taller composer |
+| Layout | NORMAL | `composer_shorter` | `-` | shorter composer |
+| Layout | NORMAL | `back_or_quit` | `q`, `ctrl+c` | back step by step, then quit |
+| Layout | NORMAL | `quit` | — | quit from anywhere (asks first) |
+
+`—` means the action is configurable and therefore appears in `sltty keys`,
+but has no default key.
