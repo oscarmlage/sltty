@@ -8,7 +8,7 @@ with ffmpeg (macOS screen capture).
 
 Tape syntax (a subset of vhs): Output, Hide/Show (what is typed between them
 is ignored: the driver starts sltty itself), Type, Enter, Escape, Tab,
-Down/Up/Left/Right, Ctrl+<letter>, Sleep. Lines starting with # are comments.
+Backspace, Down/Up/Left/Right, Ctrl+<letter>, Sleep. Lines starting with # are comments.
 
 Needs: macOS, kitty, ffmpeg and Screen Recording permission for the terminal
 running this. Do not touch the keyboard or move windows while it records.
@@ -21,7 +21,7 @@ W, H, FONT, FPS, GIF_W = 1600, 900, 15, 12, 1000
 SOCK = "/tmp/sltty-record.sock"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEYS = {"Enter": "\r", "Escape": "\x1b", "Tab": "\t", "Space": " ",
-        "Down": "\x1b[B", "Up": "\x1b[A", "Right": "\x1b[C", "Left": "\x1b[D"}
+        "Backspace": "\x7f", "Down": "\x1b[B", "Up": "\x1b[A", "Right": "\x1b[C", "Left": "\x1b[D"}
 
 
 def parse_dur(s):
