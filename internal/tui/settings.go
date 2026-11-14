@@ -25,6 +25,7 @@ const (
 	setClock
 	setImages
 	setEmoji
+	setReadOnEnter
 	setComposer
 	setSidebar
 	setKeys
@@ -86,6 +87,8 @@ func (m *model) changeSetting(d int) {
 		m.toggleImages()
 	case setEmoji:
 		m.imgs.emoji = !m.imgs.emoji
+	case setReadOnEnter:
+		m.readOnEnter = !m.readOnEnter
 	case setComposer:
 		m.setInputRows(m.inputRows + d)
 	case setSidebar:
@@ -143,6 +146,7 @@ func (m *model) overlaySettings(rows []string) {
 		{"Clock", "‹ " + clockName() + dimStyle.Render(" · "+hourOf(m.now())) + " ›"},
 		{"Images", "‹ " + images + " ›"},
 		{"Custom emoji", "‹ " + emoji + " ›"},
+		{"Read on enter", "‹ " + onOff(m.readOnEnter) + " ›"},
 		{"Composer", slider(m.inputRows, 1, max(2, m.contentRows()/2), 16) + fmt.Sprintf(" %d rows", m.inputRows)},
 		{"Sidebar", slider(m.side, minSide, max(minSide+1, maxSide), 16) + fmt.Sprintf(" %d cols", m.side)},
 		{"Keybindings", dimStyle.Render("enter ›")},
@@ -160,8 +164,8 @@ func (m *model) overlaySettings(rows []string) {
 		body = append(body, mark+fit(label, 16)+it.value)
 	}
 	k := m.km.first
-	keep := fmt.Sprintf(`"theme": %q, "layout": %q, "clock": %q, "images": %q, "composer_height": %d, "sidebar_width": %d`,
-		m.themeName, layout, clockName(), map[bool]string{true: cmpOr(m.opts.Images, "auto"), false: "off"}[m.imgs.on], m.inputRows, m.side)
+	keep := fmt.Sprintf(`"theme": %q, "layout": %q, "clock": %q, "images": %q, "read_on_enter": %t, "composer_height": %d, "sidebar_width": %d`,
+		m.themeName, layout, clockName(), map[bool]string{true: cmpOr(m.opts.Images, "auto"), false: "off"}[m.imgs.on], m.readOnEnter, m.inputRows, m.side)
 	body = append(body, "", dimStyle.Render("to keep it, in "+m.opts.ConfigPath+":"))
 	for _, l := range wrapPlain(keep, inner) {
 		body = append(body, keyStyle.Render(l))

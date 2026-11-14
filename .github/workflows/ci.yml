@@ -33,3 +33,39 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # pushes the badge to the "badges" branch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: tests with coverage
+        run: |
+          go test -coverpkg=./... -coverprofile=coverage.out ./...
+          go tool cover -func coverage.out | tail -1 | tee -a "$GITHUB_STEP_SUMMARY"
+          go tool cover -html coverage.out -o coverage.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            coverage.out
+            coverage.html
+      - name: publish the badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          scripts/coverage-badge.sh > /tmp/coverage.json
+          cat /tmp/coverage.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin badges >/dev/null; then
+            git fetch --depth=1 origin badges && git checkout -f badges
+          else
+            git checkout --orphan badges && git rm -rfq .
+          fi
+          cp /tmp/coverage.json coverage.json
+          git add coverage.json
+          git diff --cached --quiet || { git commit -qm "coverage badge" && git push origin badges; }

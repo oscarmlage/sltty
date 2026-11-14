@@ -164,6 +164,8 @@ func (f *Fake) newMsg(s string, at time.Time) Message {
 	return Message{TS: strconv.Itoa(f.seq), User: user, UserID: user, Text: text, At: at}
 }
 
+func (f *Fake) Presence(context.Context) (bool, error) { return false, nil }
+
 func (f *Fake) SetPresence(context.Context, bool) error { return nil }
 func (f *Fake) SetSnooze(context.Context, int) error    { return nil }
 

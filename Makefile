@@ -8,7 +8,7 @@ PREFIX   ?= $(HOME)/.local
 
 
 .DEFAULT_GOAL := help
-.PHONY: help build run demo test cover fmt vet check install clean
+.PHONY: help build run demo test cover cover-html fmt vet check install clean
 
 help: ## list targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -25,8 +25,11 @@ demo: build ## re-record docs/assets/demo/*.gif in kitty (macOS; needs kitty, ff
 test: ## run the tests
 	go test ./...
 
-cover: ## tests with a coverage summary
-	go test -coverprofile=coverage.out ./... && go tool cover -func coverage.out | tail -1
+cover: ## tests with the total coverage (all packages count, whoever tests them)
+	go test -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -func coverage.out | tail -1
+
+cover-html: cover ## open the coverage report in a browser
+	go tool cover -html coverage.out
 
 fmt: ## gofmt the tree
 	gofmt -w cmd internal

@@ -1,9 +1,10 @@
 # sltty
 
 [![ci](https://github.com/oscarmlage/sltty/actions/workflows/ci.yml/badge.svg)](https://github.com/oscarmlage/sltty/actions/workflows/ci.yml)
+[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/oscarmlage/sltty/badges/coverage.json)](https://github.com/oscarmlage/sltty/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Keyboard-first chat client for the terminal: the chat list and the open chat
+Keyboard-first Slack client for the terminal: the chat list and the open chat
 side by side, with a draggable divider and vim-like modes.
 
 ![sltty demo](docs/assets/demo/hero.gif)
@@ -86,7 +87,7 @@ themes, sidebar sections, pictures, command line) are in
 
 ```sh
 make check     # gofmt, vet, tests (what CI runs)
-make cover     # coverage summary
+make cover     # total coverage (make cover-html for the report)
 make demo      # re-record docs/assets/demo/*.gif (macOS, kitty, ffmpeg; uses -demo only)
 ```
 

@@ -178,6 +178,8 @@ type Backend interface {
 	File(ctx context.Context, id string) ([]byte, error)
 	// CustomEmoji lists the workspace's own :name: emoji.
 	CustomEmoji(ctx context.Context) ([]string, error)
+	// Presence reports whether the current user is away.
+	Presence(ctx context.Context) (away bool, err error)
 	// SetPresence shows the user away or active (users.setPresence).
 	SetPresence(ctx context.Context, away bool) error
 	// SetSnooze enables Do Not Disturb for minutes; zero ends it.

@@ -3,6 +3,7 @@
 sltty is a small, personal project. Issues and pull requests are welcome.
 
     make check     # gofmt, go vet, tests: what CI runs
+    make cover     # total coverage (make cover-html for the report)
     make run ARGS=-demo   # try the UI with built-in data, no Slack needed
 
 ## Ground rules

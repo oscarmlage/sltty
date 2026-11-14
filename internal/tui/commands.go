@@ -140,6 +140,21 @@ func init() {
 			}
 			return m.toggleRead()
 		}},
+		{"read_on_enter", "[on|off]", "mark conversations read when opening them", func(m *model, arg string) tea.Cmd {
+			switch arg {
+			case "":
+				m.readOnEnter = !m.readOnEnter
+			case "on", "yes":
+				m.readOnEnter = true
+			case "off", "no":
+				m.readOnEnter = false
+			default:
+				m.err = "read_on_enter: on or off"
+				return nil
+			}
+			m.status = "mark read on enter " + onOff(m.readOnEnter) + ` · "read_on_enter": ` + onOff(m.readOnEnter) + " in the config keeps it"
+			return nil
+		}},
 		{"fold", "[section]", "fold / unfold a sidebar section", func(m *model, arg string) tea.Cmd {
 			if arg == "" {
 				m.toggleSection("")
@@ -273,12 +288,20 @@ func (m *model) walkHistory(older bool) {
 
 type presenceMsg struct {
 	away bool
+	set  bool
 	err  error
+}
+
+func (m *model) loadPresence() tea.Cmd {
+	return m.call(func(ctx context.Context) tea.Msg {
+		away, err := m.backend.Presence(ctx)
+		return presenceMsg{away: away, err: err}
+	})
 }
 
 func (m *model) setPresence(away bool) tea.Cmd {
 	return m.call(func(ctx context.Context) tea.Msg {
-		return presenceMsg{away, m.backend.SetPresence(ctx, away)}
+		return presenceMsg{away: away, set: true, err: m.backend.SetPresence(ctx, away)}
 	})
 }
 

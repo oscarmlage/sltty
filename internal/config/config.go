@@ -42,6 +42,8 @@ type Config struct {
 	// sidebar's columns (26).
 	ComposerHeight int `json:"composer_height,omitempty"`
 	SidebarWidth   int `json:"sidebar_width,omitempty"`
+	// ReadOnEnter marks a conversation read when it is opened; on by default.
+	ReadOnEnter *bool `json:"read_on_enter,omitempty"`
 }
 
 type Section struct {
@@ -98,6 +100,7 @@ var Reference = []Field{
 	{"private_icon", "string", "🔒", "the mark of private channels, e.g. ◆"},
 	{"images", "string", "auto", `"auto", "kitty", "halfblock" or "off"`},
 	{"custom_emoji", "bool", "true", "the workspace's :emoji: as pictures (kitty)"},
+	{"read_on_enter", "bool", "true", "mark a conversation read when opening it"},
 	{"image_width", "int", "40", "the widest picture, in cells"},
 	{"image_height", "int", "14", "the tallest picture, in cells"},
 	{"composer_height", "int", "2", "text rows of a composer (+/- and dragging change it)"},

@@ -123,6 +123,16 @@ func (s *Slack) resolveUsers(ctx context.Context, msgs []slackMessage) {
 	}
 }
 
+func (s *Slack) Presence(ctx context.Context) (bool, error) {
+	var r struct {
+		Presence string `json:"presence"`
+	}
+	if err := s.call(ctx, "users.getPresence", url.Values{"user": {s.me}}, &r); err != nil {
+		return false, err
+	}
+	return r.Presence == "away", nil
+}
+
 func (s *Slack) SetPresence(ctx context.Context, away bool) error {
 	p := "auto"
 	if away {

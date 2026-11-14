@@ -113,7 +113,7 @@ func run() error {
 	return tui.Run(backend, tui.Options{
 		Keys: cfg.Keys, Theme: cfg.Theme, Layout: cfg.Layout, Clock: cfg.Clock, Themes: cfg.Themes, Sections: sections, PrivateIcon: cfg.PrivateIcon,
 		Version: version, Images: cfg.Images, CustomEmoji: cfg.CustomEmoji == nil || *cfg.CustomEmoji, ImageWidth: cfg.ImageWidth, ImageHeight: cfg.ImageHeight,
-		ComposerHeight: cfg.ComposerHeight, SidebarWidth: cfg.SidebarWidth,
+		ComposerHeight: cfg.ComposerHeight, SidebarWidth: cfg.SidebarWidth, ReadOnEnter: cfg.ReadOnEnter,
 		ConfigPath: *cfgPath, ConfigFound: found, LogPath: diag.Path(), StatePath: uistate.Path(),
 	})
 }

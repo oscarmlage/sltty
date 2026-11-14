@@ -28,7 +28,7 @@ func TestSettingsPanel(t *testing.T) {
 	if !boxed() {
 		t.Fatal("enter on Layout did not switch it")
 	}
-	press(m, "j", "j", "j", "j") // past the clock, images and emoji: composer
+	press(m, "j", "j", "j", "j", "j") // past the clock, images, emoji and read-on-enter: composer
 	rows := m.inputRows
 	press(m, "l", "l")
 	if m.inputRows != rows+2 || !strings.Contains(screen(m), `"composer_height": 4`) {

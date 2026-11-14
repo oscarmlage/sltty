@@ -217,6 +217,9 @@ func (m *model) entered(before spot) tea.Cmd {
 	if now.focus != paneChat || now.conv == "" || before.focus != paneSide && before.conv == now.conv {
 		return nil
 	}
+	if !m.readOnEnter {
+		return nil
+	}
 	return m.readIn(now.conv)
 }
 

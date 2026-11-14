@@ -11,25 +11,25 @@ import (
 )
 
 func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
-	var r struct {
-		Channels []struct {
-			ID    string `json:"id"`
-			Name  string `json:"name"`
-			Topic struct {
-				Value string `json:"value"`
-			} `json:"topic"`
-			IsIM               bool   `json:"is_im"`
-			IsPrivate          bool   `json:"is_private"`
-			User               string `json:"user"`
-			UnreadCountDisplay int    `json:"unread_count_display"`
-		} `json:"channels"`
-		ResponseMetadata struct {
-			NextCursor string `json:"next_cursor"`
-		} `json:"response_metadata"`
-	}
 	var all []Conversation
 	cursor := ""
 	for {
+		var r struct {
+			Channels []struct {
+				ID    string `json:"id"`
+				Name  string `json:"name"`
+				Topic struct {
+					Value string `json:"value"`
+				} `json:"topic"`
+				IsIM               bool   `json:"is_im"`
+				IsPrivate          bool   `json:"is_private"`
+				User               string `json:"user"`
+				UnreadCountDisplay int    `json:"unread_count_display"`
+			} `json:"channels"`
+			ResponseMetadata struct {
+				NextCursor string `json:"next_cursor"`
+			} `json:"response_metadata"`
+		}
 		f := url.Values{"types": {"public_channel,private_channel,im,mpim"}, "exclude_archived": {"true"}, "limit": {"200"}}
 		if cursor != "" {
 			f.Set("cursor", cursor)

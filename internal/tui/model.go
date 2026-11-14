@@ -122,6 +122,8 @@ type Options struct {
 	ImageHeight    int
 	ComposerHeight int // text rows; 0 for the default
 	SidebarWidth   int // columns; 0 for the default
+	// ReadOnEnter marks a conversation read when its messages receive focus.
+	ReadOnEnter *bool
 
 	Version     string
 	ConfigPath  string
@@ -163,16 +165,17 @@ type model struct {
 	imgs         images
 	viewer       *viewer // a picture full size, while set
 
-	cmdline    *textinput.Model // COMMAND mode while set
-	sheet      *sheet           // the keybindings or config sheet, while help is set
-	settings   *settings        // the settings panel while set
-	cmdHistory []string
-	cmdHist    int  // the entry up/down are on, -1 for none
-	away       bool // presence
-	snoozeTill time.Time
-	connected  bool // the last backend reply worked
-	replied    bool // there was one
-	jump       *jump
+	cmdline     *textinput.Model // COMMAND mode while set
+	sheet       *sheet           // the keybindings or config sheet, while help is set
+	settings    *settings        // the settings panel while set
+	cmdHistory  []string
+	cmdHist     int  // the entry up/down are on, -1 for none
+	away        bool // presence
+	readOnEnter bool
+	snoozeTill  time.Time
+	connected   bool // the last backend reply worked
+	replied     bool // there was one
+	jump        *jump
 	// Last position restored from local state after its conversation loads.
 	restoreConv, restoreTS string
 	restoreOff             int
@@ -263,6 +266,7 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		imgs:         newImages(opts),
 		side:         cmp.Or(opts.SidebarWidth, defaultSide),
 		inputRows:    cmp.Or(opts.ComposerHeight, defaultInput),
+		readOnEnter:  opts.ReadOnEnter == nil || *opts.ReadOnEnter,
 		now:          time.Now,
 		spin:         spinner.New(spinner.WithSpinner(spinner.Dot)),
 		chatIn:       newComposer(km),
@@ -282,7 +286,7 @@ func (m *model) Init() tea.Cmd {
 	return tea.Batch(m.call(func(ctx context.Context) tea.Msg {
 		c, err := m.backend.Conversations(ctx)
 		return convsMsg{c, err}
-	}), m.loadThreads(), m.loadActivity(), m.startSpinner())
+	}), m.loadPresence(), m.loadThreads(), m.loadActivity(), m.startSpinner())
 }
 
 // busy is whether something on screen waits for the backend with a spinner.
@@ -413,9 +417,12 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = "presence: " + msg.err.Error()
 			return m, nil
 		}
-		m.away, m.snoozeTill, m.status = msg.away, time.Time{}, "you are active"
-		if msg.away {
-			m.status = "you are away"
+		m.away, m.snoozeTill = msg.away, time.Time{}
+		if msg.set {
+			m.status = "you are active"
+			if msg.away {
+				m.status = "you are away"
+			}
 		}
 		return m, nil
 	case snoozeMsg:

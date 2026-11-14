@@ -28,11 +28,11 @@ actions on one key, and bad colors are errors at start-up.
 completes, ↑/↓ walk the history, `esc`/`ctrl+c`/`jk` leave): `:help`,
 `:version`, `:find [name]` (one match jumps there), `:search [words]`,
 `:settings`, `:config`, `:theme [name]`, `:layout [slack|panels]`,
-`:clock [12h|24h]`, `:images [on|off]`, `:status` (or `ctrl+s`: active, away, Do Not Disturb), `:away`, `:active`, `:read`, `:fold [section]`,
+`:clock [12h|24h]`, `:images [on|off]`, `:status` (or `ctrl+s`: active, away, Do Not Disturb), `:away`, `:active`, `:read`, `:read_on_enter [on|off]`, `:fold [section]`,
 `:log`, `:save` (`:w`), `:savequit` (`:wq`) and `:quit` (`:q`).
 
 `;` (or `:settings`) is the settings panel: theme, layout, clock (15:04 or
-3:04 PM), images, custom emoji, composer height and sidebar width (`h`/`l` change them, live), and the
+3:04 PM), images, custom emoji, marking messages read on entry, composer height and sidebar width (`h`/`l` change them, live), and the
 way to the keybindings and to the config reference; it shows the config
 lines that keep what you changed. `?` lists keys in compact category tabs;
 `h/l` changes tabs and `/` searches all of them. `sltty config` prints what
