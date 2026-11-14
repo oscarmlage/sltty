@@ -106,3 +106,97 @@ func TestBrokenBlocksKeepTheText(t *testing.T) {
 		t.Fatalf("a block that does not read leaves the text: %q", x.Text)
 	}
 }
+
+func readBlocks(t *testing.T, js string) (string, []string, bool) {
+	t.Helper()
+	var bs slackBlocks
+	if err := json.Unmarshal([]byte(js), &bs); err != nil {
+		t.Fatal(err)
+	}
+	return blocksMrkdwn(bs)
+}
+
+func TestBlockKitShapes(t *testing.T) {
+	body, ctx, ok := readBlocks(t, `[
+	 {"type":"header","text":{"type":"plain_text","text":"Deploy <ok>"}},
+	 {"type":"section","text":{"type":"mrkdwn","text":"*done* in <https://x.test|x>"},
+	  "fields":[{"type":"mrkdwn","text":"env"},{"type":"plain_text","text":"a & b"}]},
+	 {"type":"divider"},
+	 {"type":"actions","elements":[
+	   {"type":"button","text":{"type":"plain_text","text":"Open"}},
+	   {"type":"button","text":{"type":"plain_text","text":" "}},
+	   {"type":"static_select","text":{"type":"plain_text","text":"Assign"}},
+	   {"type":"external_select","text":{"type":"plain_text","text":""}},
+	   {"type":"image","alt_text":"ignored"}]},
+	 {"type":"actions","elements":[{"type":"button","text":""}]},
+	 {"type":"context","elements":[{"type":"mrkdwn","text":"by *bot*"},{"type":"plain_text","text":"1 < 2"},{"type":"image","alt_text":"x"}]},
+	 {"type":"context","elements":[{"type":"image","alt_text":"only an image"}]},
+	 {"type":"header"},
+	 {"type":"section"},
+	 {"type":"unknown_new_block","elements":[{"type":"text","text":"ignored"}]}]`)
+	if !ok {
+		t.Fatal("blocks with content must replace the text")
+	}
+	for _, want := range []string{"*Deploy &lt;ok&gt;*", "*done* in <https://x.test|x>", "env\na &amp; b", "──────", "[ Open ] [ Assign ▾ ]"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body lacks %q:\n%s", want, body)
+		}
+	}
+	if len(ctx) != 1 || ctx[0] != "by *bot*  1 &lt; 2" {
+		t.Fatalf("context %q", ctx)
+	}
+}
+
+func TestRichTextElements(t *testing.T) {
+	body, _, ok := readBlocks(t, `[{"type":"rich_text","elements":[
+	 {"type":"rich_text_section","elements":[
+	  {"type":"text","text":"hi "},{"type":"user","user_id":"U1"},{"type":"text","text":" "},
+	  {"type":"channel","channel_id":"C9"},{"type":"text","text":" "},
+	  {"type":"usergroup","usergroup_id":"S1"},{"type":"text","text":" "},
+	  {"type":"broadcast","range":"here"},{"type":"text","text":" "},
+	  {"type":"date","fallback":"Nov 13 <soon>"},{"type":"text","text":" "},
+	  {"type":"color","value":"#ff0000"},{"type":"text","text":" "},
+	  {"type":"link","url":"https://a.test/?q=1&r=2"},{"type":"text","text":" "},
+	  {"type":"link","url":"https://b.test","text":"B"},{"type":"text","text":" "},
+	  {"type":"text","text":"gone","style":{"strike":true,"code":true}},{"type":"text","text":"\n\n"},
+	  {"type":"text","text":"two\nlines","style":{"bold":true,"italic":true}}]},
+	 {"type":"rich_text_list","style":"ordered","offset":2,"indent":1,"elements":[
+	  {"type":"rich_text_section","elements":[{"type":"text","text":"c"}]},
+	  {"type":"rich_text_section","elements":[{"type":"text","text":"d"}]}]},
+	 {"type":"rich_text_preformatted","elements":[
+	  {"type":"text","text":"a < b\n\nwith \u0060 tick\n"},{"type":"link","url":"https://c.test"},{"type":"link","text":"label only"}]},
+	 {"type":"rich_text_quote","elements":[{"type":"text","text":"quoted\nbox"}]}]}]`)
+	if !ok {
+		t.Fatal("no body")
+	}
+	for _, want := range []string{
+		"hi <@U1> <#C9> <!subteam^S1> <!here> Nov 13 &lt;soon&gt; #ff0000 <https://a.test/?q=1&amp;r=2> <https://b.test|B> ~`gone`~",
+		"*_two_*\n*_lines_*", "  3. c\n  4. d", "`a &lt; b`", "`https://c.testlabel only`", "▎ quoted\n▎ box",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body lacks %q:\n%s", want, body)
+		}
+	}
+	// the people a message's blocks mention are looked up
+	var bs slackBlocks
+	_ = json.Unmarshal([]byte(`[{"type":"rich_text","elements":[{"type":"rich_text_section","elements":[{"type":"user","user_id":"U7"},{"type":"user"}]}]}]`), &bs)
+	if got := richUsers(bs); len(got) != 1 || got[0] != "U7" {
+		t.Fatalf("richUsers %v", got)
+	}
+}
+
+func TestBlocksWithNothingToSayAndBadShapes(t *testing.T) {
+	if _, _, ok := readBlocks(t, `[{"type":"divider"},{"type":"rich_text","elements":[]}]`); !ok {
+		// a divider alone is still a body
+		t.Fatal("a divider is content")
+	}
+	if _, _, ok := readBlocks(t, `[{"type":"section","text":{"type":"mrkdwn","text":"  "}}]`); ok {
+		t.Fatal("blank blocks must keep the message text")
+	}
+	if _, _, ok := readBlocks(t, `"not a list"`); ok {
+		t.Fatal("garbage blocks must keep the message text")
+	}
+	if _, _, ok := readBlocks(t, `[{"type":"section","text":5}]`); ok {
+		t.Fatal("a block that does not decode marks them all bad")
+	}
+}

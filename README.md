@@ -14,6 +14,10 @@ network). `sltty login` enables an optional, *unofficial* Slack connection
 that uses your browser session; read the
 [security model](docs/slack-session.md) before using it.
 
+**Disclaimer:** sltty is unofficial and is not affiliated with, endorsed by,
+or sponsored by Slack Technologies, LLC. “Slack” is a trademark of Slack
+Technologies, LLC.
+
 ## Install
 
 Requires Go (the version in [`go.mod`](go.mod)).

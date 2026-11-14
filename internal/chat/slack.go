@@ -42,7 +42,7 @@ func NewSlack(ctx context.Context, creds Credentials) (*Slack, error) {
 	if creds.Token == "" || creds.Cookie == "" {
 		return nil, fmt.Errorf("Slack session is incomplete; run sltty login")
 	}
-	s := &Slack{creds: creds, hc: newHTTPClient(), apiBase: "https://slack.com/api/", users: map[string]string{}, urls: map[string]string{}}
+	s := &Slack{creds: creds, hc: newHTTPClient(), apiBase: slackAPI, users: map[string]string{}, urls: map[string]string{}}
 	var a struct {
 		OK     bool   `json:"ok"`
 		UserID string `json:"user_id"`
@@ -70,6 +70,17 @@ func NewSlack(ctx context.Context, creds Credentials) (*Slack, error) {
 // newHTTPClient refuses to follow redirects off https: the session headers
 // must never travel in clear text.
 func newHTTPClient() *http.Client {
+	return httpClientFactory()
+}
+
+// slackAPI is where NewSlack starts; auth.test may point elsewhere (Grid).
+// httpClientFactory builds the client. Both are variables for the tests.
+var (
+	slackAPI          = "https://slack.com/api/"
+	httpClientFactory = defaultHTTPClient
+)
+
+func defaultHTTPClient() *http.Client {
 	return &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 5 {
 			return errors.New("too many redirects")

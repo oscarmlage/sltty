@@ -26,6 +26,14 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
+// The system tools this relies on; variables for the tests.
+var (
+	sqliteBin        = "/usr/bin/sqlite3"
+	keychainPassword = func() ([]byte, error) {
+		return exec.Command("/usr/bin/security", "find-generic-password", "-w", "-s", "Slack Safe Storage").Output()
+	}
+)
+
 func slackDesktopDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -94,7 +102,7 @@ func desktopCookie(dir string) (string, error) {
 			return "", e
 		}
 	}
-	out, err := exec.Command("/usr/bin/sqlite3", "-noheader", filepath.Join(tmp, "Cookies"), `SELECT value || '|' || hex(encrypted_value) FROM cookies WHERE host_key='.slack.com' AND name='d' LIMIT 1`).Output()
+	out, err := exec.Command(sqliteBin, "-noheader", filepath.Join(tmp, "Cookies"), `SELECT value || '|' || hex(encrypted_value) FROM cookies WHERE host_key='.slack.com' AND name='d' LIMIT 1`).Output()
 	if err != nil {
 		return "", fmt.Errorf("reading Slack Desktop cookies requires sqlite3: %w", err)
 	}
@@ -109,7 +117,7 @@ func desktopCookie(dir string) (string, error) {
 	if err != nil || len(enc) < 4 || string(enc[:3]) != "v10" {
 		return "", fmt.Errorf("unsupported Slack Desktop cookie encryption")
 	}
-	pw, err := exec.Command("/usr/bin/security", "find-generic-password", "-w", "-s", "Slack Safe Storage").Output()
+	pw, err := keychainPassword()
 	if err != nil {
 		return "", fmt.Errorf("reading Slack Safe Storage from Keychain: %w", err)
 	}

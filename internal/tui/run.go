@@ -93,12 +93,18 @@ func Run(b chat.Backend, opts Options) error {
 		}
 	}
 	m.imgs.mode = mode
-	_, err = tea.NewProgram(m).Run()
+	err = runProgram(m)
 	// Position is intentionally automatic: a normal quit restores it even if
 	// the user never runs :save for their visual preferences.
 	if err == nil && opts.StatePath != "" {
 		_ = m.saveUIState()
 	}
+	return err
+}
+
+// runProgram takes over the terminal until the model quits; tests replace it.
+var runProgram = func(m *model) error {
+	_, err := tea.NewProgram(m).Run()
 	return err
 }
 

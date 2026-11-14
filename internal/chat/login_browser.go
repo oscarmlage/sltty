@@ -20,7 +20,7 @@ import (
 // Login opens an isolated Chromium profile. CDP is used only to read the
 // resulting Slack session; the password and any SSO/MFA flow stay in Chrome.
 func Login(ctx context.Context, progress func(string)) (Credentials, error) {
-	exe, err := findChrome()
+	exe, err := findChrome(runtime.GOOS)
 	if err != nil {
 		return Credentials{}, err
 	}
@@ -42,7 +42,7 @@ func Login(ctx context.Context, progress func(string)) (Credentials, error) {
 	}
 	defer func() { _ = cmd.Process.Kill(); _ = cmd.Wait() }()
 	progress("Complete Slack login/SSO in the Chrome window; waiting for the session…")
-	deadline := time.Now().Add(5 * time.Minute)
+	deadline := time.Now().Add(loginTimeout)
 	sawCookie := false
 	for time.Now().Before(deadline) {
 		select {
@@ -63,20 +63,28 @@ func Login(ctx context.Context, progress func(string)) (Credentials, error) {
 				return c, nil
 			}
 		}
-		time.Sleep(time.Second)
+		time.Sleep(loginPoll)
 	}
 	return Credentials{}, fmt.Errorf("timed out waiting for Slack login")
 }
-func findChrome() (string, error) {
-	candidates := []string{}
-	switch runtime.GOOS {
+
+// candidatesFor is browserCandidates; a variable for the tests.
+var candidatesFor = browserCandidates
+
+// browserCandidates are where each platform keeps a Chromium-family browser:
+// full paths, or names to look up in PATH.
+func browserCandidates(goos string) []string {
+	switch goos {
 	case "darwin":
-		candidates = []string{"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium", "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser", "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"}
+		return []string{"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium", "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser", "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"}
 	case "windows":
-		candidates = []string{`C:\Program Files\Google\Chrome\Application\chrome.exe`, `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`}
-	default:
-		candidates = []string{"google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "brave-browser", "microsoft-edge"}
+		return []string{`C:\Program Files\Google\Chrome\Application\chrome.exe`, `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`}
 	}
+	return []string{"google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "brave-browser", "microsoft-edge"}
+}
+
+func findChrome(goos string) (string, error) {
+	candidates := candidatesFor(goos)
 	for _, p := range candidates {
 		if strings.Contains(p, "/") || strings.Contains(p, `\`) {
 			if _, err := os.Stat(p); err == nil {
@@ -119,7 +127,7 @@ func readBrowserSession(port int) (string, string) {
 // Recent Slack clients may defer localStorage until after the desktop-app
 // handoff. The authenticated boot document remains a useful fallback.
 func mintBrowserToken(ctx context.Context, cookie string) string {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://app.slack.com/client", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, slackClientURL, nil)
 	if err != nil {
 		return ""
 	}
@@ -199,5 +207,10 @@ var xoxc = regexp.MustCompile(`xoxc-[A-Za-z0-9-]+`)
 // wait on it forever.
 var (
 	cdpClient = &http.Client{Timeout: 10 * time.Second}
-	cdpDialer = &websocket.Dialer{HandshakeTimeout: 10 * time.Second}
+	// slackClientURL is the authenticated boot document, a token fallback.
+	slackClientURL = "https://app.slack.com/client"
+	// how long, and how often, Login waits for the session
+	loginTimeout = 5 * time.Minute
+	loginPoll    = time.Second
+	cdpDialer    = &websocket.Dialer{HandshakeTimeout: 10 * time.Second}
 )
