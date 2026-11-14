@@ -32,6 +32,12 @@ Themes with live preview, and the two layouts. [`themes.tape`](themes.tape)
 
 ![themes](themes.gif)
 
+## links
+
+List a message's links and open one from the keyboard (`o`, then `a s d f…` or `1`-`9`). [`links.tape`](links.tape)
+
+![links](links.gif)
+
 ## sections
 
 Folding sidebar sections. [`sections.tape`](sections.tape)

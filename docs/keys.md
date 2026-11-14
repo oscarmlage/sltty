@@ -6,7 +6,8 @@ Every binding lives in one table and can be changed in the config file (see [con
 Highlights: `j/k` move everywhere (chats, messages, thread, the lists of
 `ctrl+k` / `ctrl+f` / `r` / `T`), `h/l` panes, `enter` opens a thread, `R`
 shows who reacted (tabs by emoji), `r` reacts (the usual few; typing finds any of Slack's
-emoji and the workspace's own, as in slk), `v` opens the message's picture
+emoji and the workspace's own, as in slk), `o` lists the message's links and opens one with a hint key (`a s d f…`
+or `1`-`9`, no mouse needed; it uses `open` / `xdg-open`), `v` opens the message's picture
 full screen, `e` edits your message (`↑` in an empty composer
 edits your last one), `u` toggles read / unread (on a message: unread from
 there on; on a thread or an activity entry: just that one; what `u` marks
@@ -50,7 +51,7 @@ its defaults as JSON.
 | Move | `h` / `l`, `j` / `k` | `focus_left` / `focus_right`, `down` / `up` |
 | Move | `ctrl+k` or `ctrl+p` | `switcher` |
 | Find | `ctrl+f`, `/`, `n` / `N` | `search`, `filter`, next / previous match |
-| Messages | `enter`, `r`, `R`, `e`, `u`, `v` | open, react, reactions, edit, read/unread, view picture |
+| Messages | `enter`, `r`, `R`, `e`, `u`, `v`, `o` | open, react, reactions, edit, read/unread, view picture, links |
 | Compose | `i` or `a`, `enter`, `shift+enter` | insert, send, new line |
 | Compose | `esc`, `ctrl+c`, `j k` | `normal_mode` (leave INSERT) |
 | Layout | `T`, `L`, `I`, `;`, `ctrl+s`, `+` / `-` | theme, layout, images, settings, status, composer size |

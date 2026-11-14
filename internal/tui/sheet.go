@@ -34,6 +34,7 @@ type sheet struct {
 	first      int
 	filter     textinput.Model
 	searching  bool
+	links      []string // the Links sheet: where each row goes
 }
 
 func newSheet(title, sub string, rows [][2]string) *sheet {

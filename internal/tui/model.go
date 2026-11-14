@@ -566,6 +566,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case searchMsg:
 		m.searchResults(msg)
 		return m, nil
+	case openedMsg:
+		if msg.err != nil {
+			m.err = msg.err.Error()
+		}
+		return m, nil
 	case tea.MouseMsg:
 		return m, m.mouse(msg)
 	case tea.KeyPressMsg:

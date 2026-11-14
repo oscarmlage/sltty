@@ -220,6 +220,11 @@ func (m *model) normalKey(k string) tea.Cmd {
 	switch {
 	case m.picker != nil:
 		return m.pickerListAction(a)
+	case m.help && m.sheet != nil && m.sheet.links != nil:
+		if cmd, ok := m.linkKey(k, a); ok {
+			return cmd
+		}
+		return m.sheetAction(a)
 	case m.help:
 		return m.sheetAction(a)
 	case m.settings != nil:
@@ -345,6 +350,10 @@ func (m *model) paneAction(a action) tea.Cmd {
 	case actEdit:
 		if m.focus != paneSide {
 			return m.startEdit(m.target(), false)
+		}
+	case actLinks:
+		if m.focus != paneSide {
+			m.openLinks(m.target())
 		}
 	case actView:
 		if m.focus != paneSide && m.view == sideConv || m.focus == paneThread {
