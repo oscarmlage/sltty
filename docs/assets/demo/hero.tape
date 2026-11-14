@@ -1,4 +1,4 @@
-# README hero: messages, threads, reactions, finder, Activity, Settings and Help.
+# README hero: the whole tour in one recording.
 Output docs/assets/demo/hero.gif
 
 Hide
@@ -7,76 +7,124 @@ Enter
 Sleep 1.5s
 Show
 
-# Browse messages, then switch with the fuzzy finder.
+# Messages, with pictures and avatars.
+Sleep 1s
 Type "l"
 Sleep 500ms
-Type "jj"
-Sleep 700ms
+Type "kk"
+Sleep 900ms
+
+# Fuzzy finder: # for channels. Open the one with the pictures; v views them.
 Ctrl+K
 Sleep 400ms
-Type "#tools-team"
+Type "#help"
+Sleep 700ms
+Enter
+Sleep 1.2s
+Type "k"
+Sleep 500ms
+Type "v"
+Sleep 1.4s
+Type "l"
+Sleep 900ms
+Escape
+Sleep 600ms
+
+# Threads: open one and reply.
+Ctrl+K
+Sleep 400ms
+Type "random"
+Sleep 600ms
+Enter
+Sleep 800ms
+Type "gg"
+Sleep 400ms
+Enter
+Sleep 1.2s
+Type "i"
+Type "Both, please."
 Sleep 500ms
 Enter
-Sleep 1s
+Sleep 1.2s
+Escape
+Sleep 500ms
+Escape
+Sleep 700ms
 
-# A reaction's people, in horizontal emoji tabs.
+# Who reacted, in tabs per emoji.
+Ctrl+K
+Sleep 400ms
+Type "tools-team"
+Sleep 500ms
+Enter
+Sleep 800ms
 Type "k"
 Sleep 400ms
 Type "R"
-Sleep 1.5s
+Sleep 1.3s
 Type "l"
 Sleep 900ms
 Escape
-
-# Open a thread and write a reply.
-Type "gg"
 Sleep 500ms
-Type "t"
-Sleep 900ms
-Type "i"
-Type "Looks good from the terminal."
-Sleep 600ms
-Enter
-Sleep 1s
-Escape
 
-# Activity uses the native Slack-style notification feed.
+# Search with Slack's syntax.
+Ctrl+F
+Sleep 400ms
+Type "runner"
+Sleep 1.4s
+Escape
+Sleep 400ms
+Escape
+Sleep 500ms
+
+# Themes preview live while you move through them.
+Type "T"
+Sleep 800ms
+Down
+Sleep 800ms
+Down
+Sleep 800ms
+Down
+Sleep 800ms
+Down
+Sleep 800ms
+Down
+Sleep 800ms
+Up
+Sleep 700ms
+Up
+Sleep 700ms
+Enter
+Sleep 900ms
+
+# Another layout.
+Type "L"
+Sleep 1.3s
+Type "L"
+Sleep 800ms
+
+# Activity feed, then the command line.
 Ctrl+K
 Sleep 400ms
 Type "activity"
 Sleep 500ms
 Enter
-Sleep 1.5s
+Sleep 1.4s
+Type ":theme aubergine"
+Sleep 500ms
+Enter
+Sleep 900ms
 
-# Settings and the compact tabbed keybinding help.
+# Settings and the key list.
 Type ";"
 Sleep 1.2s
-Type "jll"
-Sleep 900ms
 Escape
+Sleep 400ms
 Type "?"
 Sleep 1.2s
 Type "l"
-Sleep 800ms
+Sleep 700ms
 Type "l"
-Sleep 800ms
-Type "l"
-Sleep 800ms
-
-# Status picker: Ctrl+S opens it, then select Away.
+Sleep 900ms
 Escape
-Ctrl+S
-Sleep 700ms
-Type "away"
-Sleep 400ms
-Enter
-Sleep 900ms
-
-# The command line opens the same picker; choose a snooze duration.
-Type ":status"
-Enter
-Sleep 700ms
-Type "snooze for 20"
-Sleep 400ms
-Enter
-Sleep 900ms
+Sleep 600ms

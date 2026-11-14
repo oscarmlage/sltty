@@ -67,48 +67,11 @@ Built-in themes: aubergine (slack layout), terminal, dracula, nord, slk, tokyo
 night, gruvbox, catppuccin, solarized, light. `T` picks one with a live
 preview, `L` switches layout.
 
-![themes](docs/assets/demo/themes.gif)
+## More demos
 
-## Tour
-
-### Find a chat or a message
-
-`ctrl+k` switches conversation (`#` channels, `@` people); `ctrl+f` searches
-messages with Slack's `in:` and `from:` filters.
-
-![switcher and search](docs/assets/demo/switcher.gif)
-
-### Threads
-
-`enter` opens a thread beside the conversation; `i` writes, `u` toggles
-read / unread.
-
-![threads](docs/assets/demo/threads.gif)
-
-### Reactions
-
-`R` shows who reacted, in tabs per emoji; `r` reacts (type to find any emoji).
-
-![reactions](docs/assets/demo/reactions.gif)
-
-### Sidebar sections
-
-`j/k` walk the sidebar, `space` folds a section.
-
-![sidebar sections](docs/assets/demo/sections.gif)
-
-### Pictures, avatars and custom emoji
-
-Inline pictures (kitty graphics, half blocks elsewhere); `v` opens a message's
-pictures full screen, `I` toggles them.
-
-![images](docs/assets/demo/images.gif)
-
-### Command line and settings
-
-`:` is a command line, `;` the settings panel, `?` the key list.
-
-![command line and settings](docs/assets/demo/commands.gif)
+Short recordings of each feature (switcher and search, threads, reactions,
+themes, sidebar sections, pictures, command line) are in
+[`docs/assets/demo/`](docs/assets/demo/).
 
 ## Documentation
 

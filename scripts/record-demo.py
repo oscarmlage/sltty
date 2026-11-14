@@ -17,7 +17,7 @@ running this. Do not touch the keyboard or move windows while it records.
 """
 import json, os, re, shutil, subprocess, sys, tempfile, time
 
-W, H, FONT, FPS, GIF_W = 1600, 900, 15, 15, 1200
+W, H, FONT, FPS, GIF_W = 1600, 900, 15, 12, 1000
 SOCK = "/tmp/sltty-record.sock"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEYS = {"Enter": "\r", "Escape": "\x1b", "Tab": "\t", "Space": " ",
@@ -96,8 +96,14 @@ def record(tape):
                 break
         if not b:
             sys.exit("kitty window not found")
-        time.sleep(2.5)  # sltty up, images loaded
-        b = bounds(title)
+        # wait until the window has stopped moving and sltty is up
+        for _ in range(20):
+            time.sleep(1.0)
+            b2 = bounds(title)
+            if b2 == b:
+                break
+            b = b2
+        time.sleep(1.5)
         x, y, w, h = (int(b[k]) for k in ("X", "Y", "Width", "Height"))
         tmp = tempfile.mkdtemp()
         raw = os.path.join(tmp, "cap.mp4")
