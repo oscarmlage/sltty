@@ -103,7 +103,7 @@ func (m *model) openPicker(kind pickKind, target *chat.Message) tea.Cmd {
 		if target.User == "you" {
 			whose = "your"
 		}
-		p.title, in.Placeholder = "React to "+whose+" message", "emoji name (Telegram allows a set of reactions per chat)"
+		p.title, in.Placeholder = "React to "+whose+" message", m.reactHint()
 		p.target, p.convID = *target, m.convID()
 		load = m.loadCustomEmoji() // for their names
 	case pickTheme:

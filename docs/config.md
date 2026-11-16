@@ -22,6 +22,26 @@ another way to leave INSERT. Each array replaces that action's defaults. Run
 `sltty keys` to print the complete starter mapping. Unknown actions, two
 actions on one key, and bad colors are errors at start-up.
 
+## Accounts and tabs
+
+Slack and Telegram run side by side in one sltty, each account in a tab.
+Every service with a saved session opens (`sltty login` for Slack,
+`sltty login telegram` for Telegram); `"accounts": ["telegram", "slack"]`
+in the config chooses which and in what order. With a single account there
+is no tab bar.
+
+The tab bar on top shows each account and its unread count (muted chats
+aside). `alt+1`…`alt+9` open a tab from any mode, `g t` / `g T` go to the
+next / previous one, and a click on a tab opens it. Accounts in the
+background keep working: Telegram's live updates and every unread count
+stay current.
+
+The settings (theme, layout, clock, images, sizes, reading, history cache)
+are one set for all the accounts. Searches, the switcher, drafts, sections
+and the history cache belong to each account: `ctrl+f` searches the
+account in front. `sections` in the config apply to Slack; Telegram keeps
+its own folders (Archived starts folded).
+
 ## Command line, settings, help
 
 `:` opens a command line in the status bar, slk style (`COMMAND` pill; tab

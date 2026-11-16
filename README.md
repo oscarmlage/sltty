@@ -4,19 +4,23 @@
 [![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/oscarmlage/sltty/badges/coverage.json)](https://github.com/oscarmlage/sltty/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Keyboard-first Slack client for the terminal: the chat list and the open chat
-side by side, with a draggable divider and vim-like modes.
+Keyboard-first Slack and Telegram client for the terminal: the chat list and
+the open chat side by side, with a draggable divider and vim-like modes. Each
+account (a Slack workspace, Telegram) opens in its own tab, with one set of
+settings for all of them.
 
 ![sltty demo](docs/assets/demo/hero.gif)
 
 **Status: early and experimental.** It starts in demo mode (made-up data, no
 network). `sltty login` enables an optional, *unofficial* Slack connection
 that uses your browser session; read the
-[security model](docs/slack-session.md) before using it.
+[security model](docs/slack-session.md) before using it. `sltty login
+telegram` signs in to Telegram with its public client API (MTProto, as
+Telegram Desktop does); see [the Telegram session](docs/telegram-session.md).
 
 **Disclaimer:** sltty is unofficial and is not affiliated with, endorsed by,
 or sponsored by Slack Technologies, LLC. “Slack” is a trademark of Slack
-Technologies, LLC.
+Technologies, LLC. It is not affiliated with Telegram either.
 
 ## Install
 
@@ -42,7 +46,8 @@ Terminals: any with truecolor. Pictures use the kitty graphics protocol
 ```sh
 make run ARGS=-demo     # build and open it with the built-in demo data
 sltty login             # optional: connect to Slack (see docs/slack-session.md)
-sltty                   # demo without a saved session, Slack with one
+sltty login telegram    # optional: connect to Telegram (see docs/telegram-session.md)
+sltty                   # demo without a saved session; a tab per signed-in account
 ```
 
 `?` lists every key, `:` is a command line, `;` is the settings panel.
@@ -53,11 +58,12 @@ sltty                   # demo without a saved session, Slack with one
 sltty [-config file] [-demo]
 sltty keys                          print every key binding as a config file
 sltty config                        list what the config file takes
-sltty login [--browser|--desktop]   sign in through Chrome or Slack Desktop
-sltty logout                        remove the saved Slack session
+sltty login [slack] [--browser|--desktop]  sign in to Slack through Chrome or Slack Desktop
+sltty login telegram [--phone]      sign in to Telegram: a QR code (or phone and code)
+sltty logout [slack|telegram]       end that session and remove it
 ```
 
-`-config` selects the JSON config file; `-demo` ignores any saved Slack session.
+`-config` selects the JSON config file; `-demo` ignores every saved session.
 
 ## Look
 
@@ -69,7 +75,7 @@ Two layouts, any theme in either:
   composers (ideas from slk).
 
 Built-in themes: aubergine (slack layout), terminal, dracula, nord, slk, tokyo
-night, gruvbox, catppuccin, solarized, light. `T` picks one with a live
+night, gruvbox, catppuccin, solarized, light, telegram, telegram light. `T` picks one with a live
 preview, `L` switches layout.
 
 ## More demos
@@ -84,6 +90,7 @@ themes, sidebar sections, pictures, command line) are in
 - [Configuration and features](docs/config.md): config file, command line,
   sidebar sections, messages, images and custom emoji
 - [Slack session and security model](docs/slack-session.md)
+- [Telegram session and security model](docs/telegram-session.md)
 - [Architecture](docs/architecture.md)
 - [Contributing](CONTRIBUTING.md) and [security policy](SECURITY.md)
 

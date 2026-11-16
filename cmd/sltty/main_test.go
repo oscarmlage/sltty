@@ -102,17 +102,20 @@ func TestLoginSavesAndLogoutRemoves(t *testing.T) {
 	}
 }
 
-func captureTUI(t *testing.T) *struct {
-	b    chat.Backend
-	opts tui.Options
-} {
+type captured struct {
+	b        chat.Backend
+	accounts []tui.Account
+	opts     tui.Options
+}
+
+func captureTUI(t *testing.T) *captured {
 	t.Helper()
-	got := &struct {
-		b    chat.Backend
-		opts tui.Options
-	}{}
+	got := &captured{}
 	old := runTUI
-	runTUI = func(b chat.Backend, o tui.Options) error { got.b, got.opts = b, o; return nil }
+	runTUI = func(a []tui.Account, o tui.Options) error {
+		got.accounts, got.b, got.opts = a, a[0].Backend, o
+		return nil
+	}
 	t.Cleanup(func() { runTUI = old })
 	return got
 }
@@ -177,5 +180,28 @@ func TestSavedSessionIsUsedUnlessDemo(t *testing.T) {
 	}
 	if _, _, err := do(t); err == nil || !strings.Contains(err.Error(), "reading Slack session") {
 		t.Fatalf("broken session: %v", err)
+	}
+}
+
+func TestEverySignedInServiceIsATab(t *testing.T) {
+	sandbox(t)
+	got := captureTUI(t)
+	if err := chat.SaveSession(chat.Credentials{Token: "xoxc-t", Cookie: "xoxd-c"}); err != nil {
+		t.Fatal(err)
+	}
+	slack, tg := chat.NewFake(), chat.NewFake()
+	oldS, oldT, oldH := newSlack, newTelegram, hasTelegram
+	defer func() { newSlack, newTelegram, hasTelegram = oldS, oldT, oldH }()
+	newSlack = func(context.Context, chat.Credentials) (chat.Backend, error) { return slack, nil }
+	newTelegram = func(context.Context) (chat.Backend, error) { return tg, nil }
+	hasTelegram = func() bool { return true }
+	if _, _, err := do(t); err != nil || len(got.accounts) != 2 || got.accounts[0].Backend != chat.Backend(slack) || got.accounts[1].Backend != chat.Backend(tg) {
+		t.Fatalf("tabs: %v %+v", err, got.accounts)
+	}
+	// One failing service leaves the other open.
+	newTelegram = func(context.Context) (chat.Backend, error) { return nil, errors.New("offline") }
+	_, stderr, err := do(t)
+	if err != nil || len(got.accounts) != 1 || !strings.Contains(stderr, "Telegram") {
+		t.Fatalf("a failing service: %v %q %+v", err, stderr, got.accounts)
 	}
 }

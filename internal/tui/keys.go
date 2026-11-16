@@ -283,6 +283,10 @@ func (m *model) paneAction(a action) tea.Cmd {
 		} else {
 			m.focus = paneSide
 		}
+	case actNextTab:
+		return func() tea.Msg { return tabMsg{delta: 1} }
+	case actPrevTab:
+		return func() tea.Msg { return tabMsg{delta: -1} }
 	case actNextChat:
 		return m.sideMove(1)
 	case actPrevChat:

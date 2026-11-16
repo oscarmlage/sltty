@@ -4,6 +4,10 @@ PKG      := ./cmd/sltty
 BIN_DIR  := bin
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS  := -s -w -X main.version=$(VERSION)
+# The Telegram app sltty signs in as (see internal/chat/telegram_app.go).
+ifneq ($(SLTTY_TELEGRAM_API_ID),)
+LDFLAGS  += -X github.com/oscarmlage/sltty/internal/chat.appID=$(SLTTY_TELEGRAM_API_ID) -X github.com/oscarmlage/sltty/internal/chat.appHash=$(SLTTY_TELEGRAM_API_HASH)
+endif
 PREFIX   ?= $(HOME)/.local
 
 

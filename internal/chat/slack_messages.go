@@ -329,4 +329,3 @@ func (s *Slack) Mark(ctx context.Context, id, ts string) error {
 	var r struct{}
 	return s.call(ctx, "conversations.mark", url.Values{"channel": {id}, "ts": {ts}}, &r)
 }
-

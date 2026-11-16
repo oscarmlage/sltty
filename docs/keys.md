@@ -23,6 +23,9 @@ Slack's `in:#channel` / `in:@person` and `from:@person`, highlights the words
 and shows the time on the right. A click picks, the wheel scrolls, a click
 outside closes.
 
+Accounts (with Slack and Telegram signed in): `alt+1`…`alt+9` open that tab,
+`g t` / `g T` the next / previous one; a click on a tab opens it.
+
 Leaving INSERT without `esc` (iPad): `ctrl+c`, `ctrl+[` (it is esc to the
 terminal) or typing `jk`. New line: `shift+enter` (terminals with the kitty
 keyboard protocol: Ghostty, kitty, WezTerm, iTerm2 with CSI u), `alt+enter`

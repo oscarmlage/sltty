@@ -113,8 +113,7 @@ func (m *model) gotBigPicture(msg bigPictureMsg) tea.Cmd {
 	if m.imgs.mode != img.Kitty {
 		return nil
 	}
-	p.id = m.imgs.nextID
-	m.imgs.nextID++
+	p.id = newImageID()
 	return tea.Raw(img.Upload(p.id, msg.png, p.cols, p.rows))
 }
 

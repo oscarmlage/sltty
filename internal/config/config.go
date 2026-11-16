@@ -44,6 +44,9 @@ type Config struct {
 	SidebarWidth   int `json:"sidebar_width,omitempty"`
 	// HistoryCacheTTL is the local history cache lifetime in minutes; 0 disables it.
 	HistoryCacheTTL int `json:"history_cache_ttl,omitempty"`
+	// Accounts are the services to open, one tab each, in this order:
+	// "slack", "telegram". Empty: every service with a saved session.
+	Accounts []string `json:"accounts,omitempty"`
 	// ReadOnEnter marks a conversation read when it is opened; on by default.
 	ReadOnEnter *bool `json:"read_on_enter,omitempty"`
 }
@@ -93,12 +96,13 @@ type Field struct {
 
 // Reference is every key the config file takes.
 var Reference = []Field{
+	{"accounts", "array", "every signed-in service", `the tabs, in order: "slack", "telegram"`},
 	{"theme", "string", "aubergine", "theme name: a built-in one or one of themes"},
 	{"layout", "string", "the theme's", `"slack" (msga look) or "panels" (slk look)`},
 	{"clock", "string", "24h", `"24h" (15:04) or "12h" (3:04 PM)`},
 	{"keys", "object", "see `sltty keys`", "action → list of keys; a list replaces the action's defaults"},
 	{"themes", "object", "", `custom themes: name → colors, optionally on a "base" theme`},
-	{"sections", "array", "", `custom sidebar groups: {"name", "channels": globs, "@name" for DMs, "collapsed"}`},
+	{"sections", "array", "", `custom Slack sidebar groups: {"name", "channels": globs, "@name" for DMs, "collapsed"}`},
 	{"private_icon", "string", "🔒", "the mark of private channels, e.g. ◆"},
 	{"images", "string", "auto", `"auto", "kitty", "halfblock" or "off"`},
 	{"custom_emoji", "bool", "true", "the workspace's :emoji: as pictures (kitty)"},

@@ -12,6 +12,7 @@ require (
 	github.com/gotd/td v0.166.1
 	github.com/syndtr/goleveldb v1.0.0
 	golang.org/x/crypto v0.54.0
+	golang.org/x/term v0.45.0
 	rsc.io/qr v0.2.0
 )
 

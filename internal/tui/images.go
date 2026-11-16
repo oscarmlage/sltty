@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"strings"
+	"sync/atomic"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -41,7 +42,6 @@ type images struct {
 	order        []string // fetch order, to drop the oldest past the budget
 	used         int
 	custom       map[string]bool // the workspace's :emoji:
-	nextID       uint32
 	customLoaded bool
 }
 
@@ -75,7 +75,7 @@ func newImages(o Options) images {
 	return images{
 		on: true, emoji: o.CustomEmoji,
 		cols: cmp.Or(o.ImageWidth, defaultImgCols), rows: cmp.Or(o.ImageHeight, defaultImgRows),
-		pics: map[string]*picture{}, custom: map[string]bool{}, nextID: kittyFirstImage,
+		pics: map[string]*picture{}, custom: map[string]bool{},
 	}
 }
 
@@ -305,8 +305,7 @@ func (m *model) gotPicture(msg pictureMsg) tea.Cmd {
 		delete(s.pics, oldID) // fetched again if it shows again
 	}
 	if s.mode == img.Kitty {
-		p.id = s.nextID
-		s.nextID++
+		p.id = newImageID()
 		out.WriteString(img.Upload(p.id, p.png, p.cols, p.rows))
 		p.png = nil // the terminal has it now
 	}
@@ -463,4 +462,13 @@ func (m *model) reactionEmoji(e string) string {
 		}
 	}
 	return e
+}
+
+// lastImageID numbers kitty images for the whole program: every account
+// shares the one terminal, so their ids must never collide.
+var lastImageID atomic.Uint32
+
+func newImageID() uint32 {
+	lastImageID.CompareAndSwap(0, kittyFirstImage-1)
+	return lastImageID.Add(1)
 }

@@ -9,16 +9,20 @@ this repository. You will get an answer within a few days.
 ## What matters here
 
 sltty handles a Slack session (the `d` cookie and an `xoxc` token), which is
-as good as a password. Reports about any of these are especially welcome:
+as good as a password, and a Telegram session (an MTProto authorization
+key), as good as a logged-in device. Reports about any of these are
+especially welcome:
 
-- the session leaking (logs, temp files, requests to hosts other than
-  Slack's, plain-text HTTP);
-- untrusted Slack content (messages, names, titles, files) reaching the
-  terminal in a way that drives it (escape sequences) or crashes the client;
-- the login flows reading more than they say they read.
+- a session leaking (logs, temp files, requests to hosts other than
+  Slack's or Telegram's, plain-text HTTP);
+- untrusted content (messages, names, titles, files) reaching the terminal
+  in a way that drives it (escape sequences) or crashes the client;
+- the login flows reading or storing more than they say (the Telegram 2FA
+  password must never be saved).
 
 The threat model and what the code does about each point is in
-[docs/slack-session.md](docs/slack-session.md).
+[docs/slack-session.md](docs/slack-session.md) and
+[docs/telegram-session.md](docs/telegram-session.md).
 
 ## Supported versions
 

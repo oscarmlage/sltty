@@ -41,7 +41,7 @@ func init() {
 			m.openConfigRef()
 			return nil
 		}},
-		{"log", "", "open application and Telegram connection logs", func(m *model, _ string) tea.Cmd {
+		{"log", "", "open application and connection logs", func(m *model, _ string) tea.Cmd {
 			m.openLog()
 			return nil
 		}},
