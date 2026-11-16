@@ -31,13 +31,17 @@ in the config chooses which and in what order. With a single account there
 is no tab bar.
 
 The tab bar on top shows each account and its unread count (muted chats
-aside). `alt+1`…`alt+9` open a tab from any mode, `g t` / `g T` go to the
+aside): the active tab filled with its theme's main color, the others in
+their own sidebar color. `alt+1`…`alt+9` open a tab from any mode, `g t` / `g T` go to the
 next / previous one, and a click on a tab opens it. Accounts in the
 background keep working: Telegram's live updates and every unread count
 stay current.
 
-The settings (theme, layout, clock, images, sizes, reading, history cache)
-are one set for all the accounts. Searches, the switcher, drafts, sections
+Each account has its own theme and layout: pick one with `T` (or `;`)
+while in its tab and it is kept for that account. Without one saved, an
+account takes the config's `theme`, and Telegram the `telegram` theme when
+the config sets none. The other settings (clock, images, sizes, reading,
+history cache) are one set for all the accounts. Searches, the switcher, drafts, sections
 and the history cache belong to each account: `ctrl+f` searches the
 account in front. `sections` in the config apply to Slack; Telegram keeps
 its own folders (Archived starts folded).

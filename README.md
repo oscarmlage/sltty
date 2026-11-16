@@ -6,8 +6,8 @@
 
 Keyboard-first Slack and Telegram client for the terminal: the chat list and
 the open chat side by side, with a draggable divider and vim-like modes. Each
-account (a Slack workspace, Telegram) opens in its own tab, with one set of
-settings for all of them.
+account (a Slack workspace, Telegram) opens in its own tab, with its own
+theme and one set of the other settings for all of them.
 
 ![sltty demo](docs/assets/demo/hero.gif)
 

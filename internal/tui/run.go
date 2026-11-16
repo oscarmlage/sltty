@@ -41,8 +41,9 @@ func RunAccounts(accounts []Account, opts Options) error {
 	if opts.StatePath != "" {
 		state, stateErr = uistate.Load()
 	}
+	cfgTheme, cfgLayout := opts.Theme, opts.Layout
 	if stateErr == nil && opts.StatePath != "" {
-		// The visual settings come from the first account that saved them.
+		// The shared settings come from the first account that saved them.
 		var saved uistate.Workspace
 		found := false
 		for _, a := range accounts {
@@ -106,7 +107,33 @@ func RunAccounts(accounts []Account, opts Options) error {
 	if err != nil {
 		return err
 	}
-	t, err := ts.get(opts.Theme, opts.Layout)
+	// Each account has its own theme and layout: the one it saved, else the
+	// config's, else its service's (Telegram's for Telegram).
+	themes := make([][2]string, len(accounts))
+	for i, a := range accounts {
+		name, layout := cfgTheme, cfgLayout
+		if name == "" {
+			if _, ok := a.Backend.(*chat.Telegram); ok {
+				name = "telegram"
+			}
+		}
+		if saved, ok := state.Workspaces[a.Backend.Workspace()]; ok && stateErr == nil && opts.StatePath != "" {
+			if saved.Theme != "" {
+				name = saved.Theme
+			}
+			if saved.Layout != "" {
+				layout = saved.Layout
+			}
+		}
+		if _, err := ts.get(name, layout); err != nil {
+			if name == cfgTheme && layout == cfgLayout {
+				return err
+			}
+			name, layout = cfgTheme, cfgLayout // a saved theme that is gone
+		}
+		themes[i] = [2]string{name, layout}
+	}
+	t, err := ts.get(themes[0][0], themes[0][1])
 	if err != nil {
 		return err
 	}
@@ -122,6 +149,7 @@ func RunAccounts(accounts []Account, opts Options) error {
 	for i, a := range accounts {
 		o := opts
 		o.Sections = a.Sections
+		o.Theme, o.Layout = themes[i][0], themes[i][1]
 		m := newModel(a.Backend, km, o)
 		m.themes = ts
 		if stateErr == nil && opts.StatePath != "" {

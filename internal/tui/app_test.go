@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -133,15 +134,44 @@ func TestKeysGoToTheActiveAccountOnly(t *testing.T) {
 	}
 }
 
-func TestSettingsAreShared(t *testing.T) {
+func TestSettingsAreSharedButThemesAreNot(t *testing.T) {
 	a := newTestApp(t)
+	t.Cleanup(func() { a.tabs[0].setTheme(defaultTheme, "") })
+	a.tabs[1].setTheme("telegram", "")
+	a.tabs[0].setTheme("nord", "")
 	a.tabs[0].setSide(40)
 	a.tabs[0].setInputRows(4)
-	a.tabs[0].themeName = "nord"
 	drive(a, tea.KeyPressMsg{Code: '2', Mod: tea.ModAlt})
-	if m := a.tabs[1]; m.side != 40 || m.inputRows != 4 || m.themeName != "nord" {
-		t.Fatalf("settings not carried: side %d rows %d theme %s", m.side, m.inputRows, m.themeName)
+	if m := a.tabs[1]; m.side != 40 || m.inputRows != 4 {
+		t.Fatalf("settings not carried: side %d rows %d", m.side, m.inputRows)
 	}
+	if a.tabs[1].themeName != "telegram" || theme.SidebarBg != "#17212b" {
+		t.Fatalf("the second account lost its theme: %s", a.tabs[1].themeName)
+	}
+	drive(a, tea.KeyPressMsg{Code: '1', Mod: tea.ModAlt})
+	if a.tabs[0].themeName != "nord" || theme.Primary != "#88c0d0" {
+		t.Fatal("back on the first account, its theme is not applied")
+	}
+}
+
+func TestActiveTabStandsOut(t *testing.T) {
+	a := newTestApp(t)
+	bar := strings.Split(a.View().Content, "\n")[0]
+	primary := lipglossBg(a.tabs[0].accountTheme().Primary)
+	if !strings.Contains(bar, primary) {
+		t.Fatalf("the active tab is not filled with its theme's primary color: %q", bar)
+	}
+	drive(a, tea.KeyPressMsg{Code: '2', Mod: tea.ModAlt})
+	bar2 := strings.Split(a.View().Content, "\n")[0]
+	if bar == bar2 {
+		t.Fatal("the bar does not change with the active tab")
+	}
+}
+
+// lipglossBg is the SGR lipgloss writes for a background color.
+func lipglossBg(hex string) string {
+	r, g, b := rgb(hex)
+	return fmt.Sprintf("48;2;%d;%d;%d", r, g, b)
 }
 
 func TestMouseIsShiftedUnderTheBar(t *testing.T) {

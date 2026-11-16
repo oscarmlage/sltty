@@ -13,6 +13,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 
@@ -171,14 +172,15 @@ func (a *app) switchTab(t tabMsg) tea.Cmd {
 	a.active = next
 	to := a.cur()
 	shareSettings(from, to)
+	to.setTheme(to.themeName, to.layoutName) // each account keeps its own
 	// Different content everywhere: repaint the screen whole.
 	return tea.Batch(tea.ClearScreen, a.wrap(next, to.imageCmds()))
 }
 
-// shareSettings gives to the visual settings of from: theme, layout,
-// sizes, images, reading and the history cache.
+// shareSettings gives to the settings of from that are one for every
+// account: sizes, images, reading and the history cache. The theme and
+// layout are each account's own.
 func shareSettings(from, to *model) {
-	to.themeName, to.layoutName = from.themeName, from.layoutName
 	to.setInputRows(from.inputRows)
 	to.setSide(from.side)
 	if to.imgs.on != from.imgs.on {
@@ -257,21 +259,57 @@ func unread(m *model) int {
 	return n
 }
 
-func (a *app) tabLabel(i int) string {
-	m := a.tabs[i]
-	s := fmt.Sprintf(" %d %s ", i+1, m.backend.Workspace())
-	if n := unread(m); n > 0 {
-		s += count(n) + " "
+// accountTheme is the palette account m shows itself in.
+func (m *model) accountTheme() Theme {
+	if m.themes != nil {
+		if t, err := m.themes.get(m.themeName, m.layoutName); err == nil {
+			return t
+		}
 	}
-	return s
+	return theme
 }
+
+// onColor is black or white, whichever reads better on hex.
+func onColor(hex string) string {
+	r, g, b := rgb(hex)
+	if 299*r+587*g+114*b > 140000 {
+		return "#000000"
+	}
+	return "#ffffff"
+}
+
+// tab is one account's tab: its number and name in its own theme's colors,
+// filled when active, tinted otherwise, with its unread count as a badge.
+func (a *app) tab(i int) string {
+	m := a.tabs[i]
+	t := m.accountTheme()
+	bar := a.barColor()
+	label := fmt.Sprintf(" %d %s ", i+1, m.backend.Workspace())
+	var style lipgloss.Style
+	if i == a.active {
+		style = lipgloss.NewStyle().Background(lipgloss.Color(t.Primary)).Foreground(lipgloss.Color(onColor(t.Primary))).Bold(true)
+	} else {
+		// Inactive: the account's sidebar color, so each tab is recognizable.
+		tint := cmpOr(t.SidebarBg, mix(bar, t.Primary, 0.22))
+		style = lipgloss.NewStyle().Background(lipgloss.Color(tint)).Foreground(lipgloss.Color(cmpOr(t.SidebarText, t.Text)))
+	}
+	out := style.Render(label)
+	if n := unread(m); n > 0 {
+		badge := cmpOr(t.Badge, t.Error)
+		out += lipgloss.NewStyle().Background(lipgloss.Color(badge)).Foreground(lipgloss.Color(onColor(badge))).Bold(true).Render(" " + count(n) + " ")
+	}
+	return out
+}
+
+// barColor is the tab bar's background: the active theme's surface.
+func (a *app) barColor() string { return cmpOr(theme.Surface, "#262626") }
 
 // tabSpans are the columns each tab takes on the bar.
 func (a *app) tabSpans() [][2]int {
 	out := make([][2]int, len(a.tabs))
-	x := 0
+	x := 1
 	for i := range a.tabs {
-		w := ansi.StringWidth(a.tabLabel(i))
+		w := ansi.StringWidth(a.tab(i))
 		out[i] = [2]int{x, x + w}
 		x += w + 1
 	}
@@ -279,38 +317,17 @@ func (a *app) tabSpans() [][2]int {
 }
 
 func (a *app) tabBar() string {
-	var b strings.Builder
+	parts := make([]string, len(a.tabs))
 	for i := range a.tabs {
-		if i > 0 {
-			b.WriteString(" ")
-		}
-		label := a.tabLabel(i)
-		if i == a.active {
-			b.WriteString(sbSelText.Render(label))
-			continue
-		}
-		style := sbMuted
-		if unread(a.tabs[i]) > 0 {
-			style = sbBright
-		}
-		b.WriteString(style.Render(label))
+		parts[i] = a.tab(i)
 	}
-	return paint(b.String(), a.width, sbBg)
-}
-
-// activeTab paints the active tab's background over its label.
-func (a *app) activeTab(bar string) string {
-	r := a.tabSpans()[a.active]
-	before := ansi.Cut(bar, 0, r[0])
-	label := ansi.Cut(bar, r[0], r[1])
-	after := ansi.Cut(bar, r[1], a.width)
-	return before + paint(label, r[1]-r[0], sbSelFocusBg) + sbBg + after
+	return paint(" "+strings.Join(parts, " "), a.width, bgSeq(a.barColor()))
 }
 
 func (a *app) View() tea.View {
 	v := a.cur().View()
 	if a.bar() > 0 && a.width > 0 {
-		v.Content = a.activeTab(a.tabBar()) + "\n" + v.Content
+		v.Content = a.tabBar() + "\n" + v.Content
 	}
 	return v
 }
