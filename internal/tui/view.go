@@ -192,7 +192,15 @@ func (m *model) chatPane(w, rows int) []string {
 		}
 		return out
 	}
-	out = append(out, paneHeader(convLabel(*c), c.Topic, w, m.focus == paneChat), ruleStyle.Render(strings.Repeat("─", w)))
+	header := paneHeader(convLabel(*c), c.Topic, w, m.focus == paneChat)
+	if t := m.typingText(c.ID); t != "" {
+		ts := headerStyle
+		if m.focus == paneChat {
+			ts = headerFocus
+		}
+		header = fit(" "+ts.Render(strings.Join(strings.Fields(convLabel(*c)), " "))+"  "+sbOnline.Render(t), w)
+	}
+	out = append(out, header, ruleStyle.Render(strings.Repeat("─", w)))
 	n := m.msgRows()
 	m.layout.chatMsg, m.layout.chatText = make([]int, rows), make([]string, rows)
 	for i := range m.layout.chatMsg {

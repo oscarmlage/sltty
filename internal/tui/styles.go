@@ -10,6 +10,7 @@ var (
 	paneBg, surfaceBg, sbBg, sbSelBg, sbSelFocusBg, selBg, dragSelBg string // background sequences
 
 	sbTitle, sbMuted, sbBright, sbSelText, sbOnline, sbBadge, sbSelBadge, sbMark, sbDot lipgloss.Style
+	sbBadgeMuted                                                                        lipgloss.Style
 
 	headerStyle, headerFocus, nameStyle, meStyle, textStyle, dimStyle, linkStyle lipgloss.Style
 	reactStyle, reactMine, dayStyle, ruleStyle, selMark, openMark, keyStyle      lipgloss.Style
@@ -48,6 +49,7 @@ func applyTheme(t Theme) {
 	sbSelText = fg(t.SidebarSelFg).Bold(true)
 	sbOnline = fg(t.Accent)
 	sbBadge = lipgloss.NewStyle().Background(c(t.Badge)).Foreground(c("#ffffff")).Bold(true).Padding(0, 1)
+	sbBadgeMuted = lipgloss.NewStyle().Background(c(t.SidebarMuted)).Foreground(c(cmpOr(t.SidebarBg, "#000000"))).Padding(0, 1)
 	// On the selected row, the red unread badge blends into the light selection.
 	// Use the cursor color instead so its count remains clearly distinguishable.
 	sbSelBadge = lipgloss.NewStyle().Background(c(t.SidebarCursorBg)).Foreground(c("#ffffff")).Bold(true).Padding(0, 1)

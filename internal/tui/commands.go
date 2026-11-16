@@ -11,6 +11,8 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
+	"github.com/oscarmlage/sltty/internal/chat"
 )
 
 // COMMAND mode, slk style: ":" opens a command line in the status bar;
@@ -39,7 +41,7 @@ func init() {
 			m.openConfigRef()
 			return nil
 		}},
-		{"log", "", "open application and Slack connection logs", func(m *model, _ string) tea.Cmd {
+		{"log", "", "open application and Telegram connection logs", func(m *model, _ string) tea.Cmd {
 			m.openLog()
 			return nil
 		}},
@@ -328,7 +330,9 @@ func (m *model) noteConnection(msg tea.Msg) {
 		return
 	}
 	m.replied = true
-	m.connected = f.IsNil()
+	// Rate limited is still connected (the field is unexported: its type
+	// is all reflection may look at).
+	m.connected = f.IsNil() || f.Elem().Type() == reflect.TypeFor[*chat.WaitError]()
 }
 
 // indicators is "● Active ● Connected", slk's corner of the status bar.

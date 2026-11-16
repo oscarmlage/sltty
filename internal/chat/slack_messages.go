@@ -330,11 +330,3 @@ func (s *Slack) Mark(ctx context.Context, id, ts string) error {
 	return s.call(ctx, "conversations.mark", url.Values{"channel": {id}, "ts": {ts}}, &r)
 }
 
-// safeLink keeps only http(s) links: the rest is not something to hand to a
-// terminal's hyperlink handler.
-func safeLink(u string) string {
-	if strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://") {
-		return u
-	}
-	return ""
-}

@@ -137,7 +137,7 @@ func (m *model) openReactions(msg *chat.Message) {
 		name := m.reactionEmoji(r.Emoji) + " " + code + " " + fmt.Sprint(r.Count)
 		users := r.Users
 		if len(users) == 0 {
-			users = []string{"Slack did not return the people for this reaction"}
+			users = []string{"Telegram did not return the people for this reaction"}
 		}
 		tr := make([][2]string, 0, len(users))
 		for _, user := range users {

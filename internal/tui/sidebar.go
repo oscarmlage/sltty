@@ -160,6 +160,10 @@ func (m *model) folded(name string) bool {
 	if v, ok := m.collapsed[name]; ok {
 		return v
 	}
+	// The backend folds some (Telegram's Archived) until the user opens them.
+	if slices.ContainsFunc(m.convs, func(c chat.Conversation) bool { return c.Section == name && c.Folded }) {
+		return true
+	}
 	for _, s := range m.opts.Sections {
 		if s.Name == name {
 			return s.Collapsed
@@ -222,7 +226,9 @@ func (m *model) visible(s section) []int {
 func (m *model) sectionUnread(s section) int {
 	n := 0
 	for _, i := range s.convs {
-		n += m.convs[i].Unread
+		if !m.convs[i].Muted {
+			n += m.convs[i].Unread
+		}
 	}
 	return n
 }
@@ -247,6 +253,9 @@ func matchIndex(patterns []string, c chat.Conversation) int {
 // headers too, in the sidebar itself, so a folded section can be unfolded.
 func (m *model) sideOrder() []sideItem {
 	out := []sideItem{{kind: sideThreads}, {kind: sideActivity}}
+	if m.noThreads {
+		out = out[1:]
+	}
 	for _, s := range m.sections() {
 		if len(s.convs) == 0 {
 			continue
@@ -327,7 +336,9 @@ func (m *model) sidebar(w, rows int) []string {
 		}
 		all = append(all, entry{text, row})
 	}
-	add(m.sideLine("💬", "Threads", m.threadsUnread(), cur.kind == sideThreads, w), rowThreads, cur.kind == sideThreads)
+	if !m.noThreads {
+		add(m.sideLine("💬", "Threads", m.threadsUnread(), cur.kind == sideThreads, w), rowThreads, cur.kind == sideThreads)
+	}
 	add(m.sideLine("🔔", "Activity", m.activityUnread(), cur.kind == sideActivity, w), rowActivity, cur.kind == sideActivity)
 	for si, s := range m.sections() {
 		if len(s.convs) == 0 {
@@ -376,7 +387,7 @@ func (m *model) sectionHeader(s section, selected bool, w int) string {
 	case unread > 0 && slk:
 		badge = " " + sbDot.Render(fmt.Sprintf("•%d", unread))
 	case unread > 0:
-		badge = sbBadge.Render(fmt.Sprint(unread))
+		badge = sbBadge.Render(count(unread))
 	}
 	leftW := max(1, w-2-lipgloss.Width(badge))
 	name := ansi.Truncate(s.name, max(1, leftW-3-lipgloss.Width(pic)), "…")
@@ -425,18 +436,41 @@ func convIcon(c chat.Conversation) string {
 }
 
 func (m *model) sideEntry(c chat.Conversation, selected bool, w int) string {
-	return m.sideLine(convIcon(c), c.Name, c.Unread, selected, w)
+	icon := convIcon(c)
+	if len(m.typing[c.ID]) > 0 {
+		icon = sbOnline.Render("✎") + " "
+	}
+	return m.sideLineM(icon, c.Name, c.Unread, c.Muted, selected, w)
+}
+
+// count is an unread count as the badge shows it: 3303 is 3.3K.
+func count(n int) string {
+	switch {
+	case n >= 10000:
+		return fmt.Sprintf("%dK", n/1000)
+	case n >= 1000:
+		return strings.TrimSuffix(fmt.Sprintf("%.1f", float64(n)/1000), ".0") + "K"
+	}
+	return fmt.Sprint(n)
 }
 
 // sideLine is one sidebar entry: icon, name and unread count, styled for
 // the theme (a filled row, or slk's cursor bar and dot).
 func (m *model) sideLine(icon, name string, unread int, selected bool, w int) string {
+	return m.sideLineM(icon, name, unread, false, selected, w)
+}
+
+// sideLineM is sideLine with a muted entry's quiet badge.
+func (m *model) sideLineM(icon, name string, unread int, muted, selected bool, w int) string {
 	if lipgloss.Width(icon) == 1 {
 		icon += " "
 	}
 	badge := ""
 	if unread > 0 {
-		badge = sbBadge.Render(fmt.Sprintf("%d", unread))
+		badge = sbBadge.Render(count(unread))
+		if muted {
+			badge = sbBadgeMuted.Render(count(unread))
+		}
 	}
 	// Reserve a fixed right-hand column for the badge. Padding the complete
 	// left side (rather than adding a gap after each variable-width name) keeps
@@ -466,7 +500,7 @@ func (m *model) sideLine(icon, name string, unread int, selected bool, w int) st
 		// leaves a stray, clipped glyph at the right edge on narrow sidebars.
 		selectedBadge := ""
 		if unread > 0 {
-			selectedBadge = sbSelBadge.Render(fmt.Sprintf("%d", unread))
+			selectedBadge = sbSelBadge.Render(count(unread))
 		}
 		return paint(sbSelText.Render(left(ansi.Strip(icon), name))+selectedBadge, w, sbSelFocusBg)
 	case selected:

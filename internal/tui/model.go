@@ -8,6 +8,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"slices"
 	"strings"
@@ -144,9 +145,22 @@ type Options struct {
 
 type model struct {
 	backend chat.Backend
-	km      *keymap
-	opts    Options
-	themes  *themeSet
+	events  <-chan chat.Event // a chat.Live backend's, nil otherwise
+	// loadDelay waits for the sidebar cursor to rest before loading a
+	// history (a live, rate-limited backend): skimming with j/k asks for
+	// none of the chats passed by.
+	loadDelay time.Duration
+	// noThreads hides the Threads view (a chat.Threadless backend).
+	noThreads bool
+	// typing is who is typing where: conversation → name → until when.
+	typing     map[string]map[string]typist
+	lastTyping struct {
+		conv string
+		at   time.Time
+	}
+	km     *keymap
+	opts   Options
+	themes *themeSet
 	// The theme and layout in use: the config's, or what T and L picked.
 	themeName, layoutName string
 
@@ -268,6 +282,7 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		layoutName:   opts.Layout,
 		history:      map[string][]chat.Message{},
 		cache:        newHistoryCache(b.Workspace(), opts.HistoryCacheTTL),
+		typing:       map[string]map[string]typist{},
 		sel:          map[string]int{},
 		drafts:       map[string]string{},
 		readThreads:  map[string]int{},
@@ -295,10 +310,15 @@ func (m *model) setTheme(name, layout string) {
 
 func (m *model) Init() tea.Cmd {
 	m.loading = true
+	if l, ok := m.backend.(chat.Live); ok {
+		m.events = l.Events()
+		m.loadDelay = 250 * time.Millisecond
+	}
+	_, m.noThreads = m.backend.(chat.Threadless)
 	return tea.Batch(m.call(func(ctx context.Context) tea.Msg {
 		c, err := m.backend.Conversations(ctx)
 		return convsMsg{c, err}
-	}), m.loadPresence(), m.loadThreads(), m.loadActivity(), m.startSpinner(), graphemeWidthCmd(os.Getenv))
+	}), m.loadPresence(), m.loadThreads(), m.loadActivity(), m.startSpinner(), graphemeWidthCmd(os.Getenv), waitEvent(m.events))
 }
 
 // graphemeWidthCmd makes the renderer measure text as the layout does.
@@ -348,9 +368,21 @@ func (m *model) loadHistory(id string) tea.Cmd {
 	})
 }
 
+// loadSoonMsg loads a history if its conversation is still the open one.
+type loadSoonMsg struct{ id string }
+
+// loadHistorySoon waits for the sidebar cursor to rest (a live,
+// rate-limited backend) before asking for a history.
+func (m *model) loadHistorySoon(id string) tea.Cmd {
+	if m.loadDelay == 0 {
+		return m.loadHistory(id)
+	}
+	return tea.Tick(m.loadDelay, func(time.Time) tea.Msg { return loadSoonMsg{id} })
+}
+
 func (m *model) loadCachedHistory(id string) tea.Cmd {
 	if m.cache == nil {
-		return m.loadHistory(id)
+		return m.loadHistorySoon(id)
 	}
 	return func() tea.Msg {
 		h, hit := m.cache.load(id)
@@ -427,7 +459,11 @@ func (m *model) target() *chat.Message {
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.noteConnection(msg)
 	before, beforeView := m.spot(), m.view
+	typed := m.typedBefore(msg)
 	_, cmd := m.update(msg)
+	if t := typed(); t != nil {
+		cmd = tea.Batch(cmd, t)
+	}
 	if read := m.entered(before); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
@@ -514,7 +550,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.convs = msg.convs
-		slices.SortStableFunc(m.convs, func(a, b chat.Conversation) int { return cmp.Compare(a.Kind, b.Kind) })
+		// Without sections from the backend, channels first, then DMs;
+		// with them, the backend's order (Telegram: most recent first).
+		if !slices.ContainsFunc(m.convs, func(c chat.Conversation) bool { return c.Section != "" }) {
+			slices.SortStableFunc(m.convs, func(a, b chat.Conversation) int { return cmp.Compare(a.Kind, b.Kind) })
+		}
 		i := 0
 		if m.restoreConv != "" {
 			for n, c := range m.convs {
@@ -529,9 +569,22 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.hit {
 			m.history[msg.id] = msg.msgs
 		}
-		// The cached view is immediate; Slack refreshes it in the background.
-		return m, m.loadHistory(msg.id)
+		// The cached view is immediate; the backend refreshes it after.
+		return m, m.loadHistorySoon(msg.id)
+	case loadSoonMsg:
+		if c := m.current(); c != nil && c.ID == msg.id {
+			if _, ok := m.history[msg.id]; !ok || m.cache != nil {
+				return m, m.loadHistory(msg.id)
+			}
+		}
+		return m, nil
 	case historyMsg:
+		var wait *chat.WaitError
+		if errors.As(msg.err, &wait) {
+			// Rate limited: say so quietly and try again when allowed.
+			m.status = wait.Error()
+			return m, tea.Tick(wait.Wait, func(time.Time) tea.Msg { return loadSoonMsg{msg.id} })
+		}
 		if msg.err != nil {
 			m.err = msg.err.Error()
 			return m, nil
@@ -569,7 +622,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case sentMsg:
 		cmd := m.sent(msg)
-		if msg.err == nil {
+		if msg.err == nil && m.events == nil { // a live backend brings the answers itself
 			cmd = tea.Batch(cmd, pollForReply(msg.id, msg.root, 0))
 		}
 		if msg.root != "" && msg.err == nil {
@@ -612,6 +665,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err.Error()
 			return m, nil
 		}
+		return m, nil
+	case eventMsg:
+		return m, tea.Batch(m.live(chat.Event(msg)), waitEvent(m.events))
+	case typingTick:
+		m.expireTyping()
 		return m, nil
 	case changedMsg:
 		if msg.err != nil {

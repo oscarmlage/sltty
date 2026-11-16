@@ -3,9 +3,10 @@ package chat
 import (
 	"html"
 	"regexp"
+	"strings"
 )
 
-// Everything Slack sends is untrusted text that ends up on the user's
+// Everything the chat service sends is untrusted text that ends up on the user's
 // terminal. A raw ESC (or any other C0/C1 control) in a message, a name or a
 // file title could drive the terminal: write to the clipboard (OSC 52), set
 // the window title, forge what is on screen... and the TUI itself reserves
@@ -41,3 +42,12 @@ func Sanitize(s string) string {
 // unescape decodes HTML entities (&lt;, &#27;...) and then sanitizes: an
 // entity must not smuggle back a control character.
 func unescape(s string) string { return Sanitize(html.UnescapeString(s)) }
+
+// safeLink keeps web links only: a message must not get the terminal to
+// open file:, javascript: or other schemes.
+func safeLink(u string) string {
+	if strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://") {
+		return u
+	}
+	return ""
+}

@@ -123,6 +123,8 @@ func renderMsgs(msgs []chat.Message, width int, inThread bool, me string, now ti
 			}
 			if boxed() {
 				lines = append(lines, linkStyle.Render("["+n+" ->]"))
+			} else if msg.LastReply.IsZero() {
+				lines = append(lines, linkStyle.Render(n))
 			} else {
 				lines = append(lines, linkStyle.Render(n)+dimStyle.Render(" · last reply "+clock(msg.LastReply, now)))
 			}

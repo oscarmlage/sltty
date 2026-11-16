@@ -29,6 +29,12 @@ type Conversation struct {
 	// Their order is already reflected in the Conversations result.
 	Section      string
 	SectionEmoji string
+	// Muted: its unread messages count quietly (a grey badge).
+	Muted bool
+	// Pinned keeps its place: new messages do not move it up.
+	Pinned bool
+	// Folded: its section starts folded (Telegram's Archived).
+	Folded bool
 }
 
 // ThreadSummary is a thread the user takes part in, for the Threads view.
@@ -184,4 +190,51 @@ type Backend interface {
 	SetPresence(ctx context.Context, away bool) error
 	// SetSnooze enables Do Not Disturb for minutes; zero ends it.
 	SetSnooze(ctx context.Context, minutes int) error
+}
+
+// EventKind is what a live Event reports.
+type EventKind int
+
+const (
+	EvMessage   EventKind = iota // a new message (Msg; RootTS when it answers one)
+	EvEdited                     // a message changed (Msg)
+	EvReactions                  // the reactions of Msg.TS are now Msg.Reactions
+	EvDeleted                    // the messages TS are gone
+	EvRead                       // the conversation was read elsewhere: Unread are left
+	EvPresence                   // a direct message's person is Online or not
+	EvTyping                     // User is typing (Action says what; empty: stopped)
+	EvConv                       // Conv changed (moved to or from Archived, muted...)
+)
+
+// Event is something that happened while the client runs.
+type Event struct {
+	Kind   EventKind
+	ConvID string
+	// Conv describes the conversation of an EvMessage, for one the
+	// sidebar does not have yet.
+	Conv   *Conversation
+	RootTS string
+	Msg    Message
+	TS     []string
+	Unread int
+	Online bool
+	User   string // EvTyping
+	Action string // EvTyping: "typing", "recording a voice message"...
+}
+
+// Typer is a Backend that tells others the user is typing.
+type Typer interface {
+	Typing(ctx context.Context, convID, rootTS string) error
+}
+
+// Threadless is a Backend without a list of the user's threads: the
+// Threads view is hidden.
+type Threadless interface {
+	NoThreadsView()
+}
+
+// Live is a Backend that pushes events as they happen. The channel stays
+// open while the backend runs.
+type Live interface {
+	Events() <-chan Event
 }

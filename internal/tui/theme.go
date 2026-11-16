@@ -65,6 +65,23 @@ var builtinThemes = []struct {
 		SidebarBg: "#3f0e40", SidebarText: "#ffffff", SidebarMuted: "#c9b6c9",
 		SidebarSelBg: "#ece6ed", SidebarSelFg: "#1d1c1d", SidebarCursorBg: "#5a2b5c",
 		Badge: "#cd2553", ReactBg: "#444444", ReactMine: "#005f87"}},
+	// telegram follows Telegram Desktop's night mode: a deep blue-grey
+	// chat list, steel-blue selection and the Telegram blue for accents.
+	{"telegram", Theme{Layout: layoutSlack,
+		Background: "#0e1621", Surface: "#182533", Text: "#f5f5f5", TextMuted: "#6d7f8f",
+		Primary: "#5eb5f7", Accent: "#6ab3f3", Warning: "#e5c07b", Error: "#ec3942", Border: "#101921",
+		Selection: "#1f2f40", Username: "#71baf4", Me: "#8ed07f",
+		SidebarBg: "#17212b", SidebarText: "#f5f5f5", SidebarMuted: "#7f91a4",
+		SidebarSelBg: "#2b5278", SidebarSelFg: "#ffffff", SidebarCursorBg: "#202b36",
+		Badge: "#3e6a96", Link: "#6ab3f3", ReactBg: "#1f3346", ReactMine: "#2b5278"}},
+	// telegram light follows Telegram's day theme: white list, blue selection.
+	{"telegram light", Theme{Layout: layoutSlack,
+		Background: "#ffffff", Surface: "#f1f1f1", Text: "#000000", TextMuted: "#707579",
+		Primary: "#3390ec", Accent: "#4fae4e", Warning: "#d9840d", Error: "#e53935", Border: "#dadce0",
+		Selection: "#eaf3fc", Username: "#3390ec", Me: "#4fae4e",
+		SidebarBg: "#ffffff", SidebarText: "#000000", SidebarMuted: "#707579",
+		SidebarSelBg: "#3390ec", SidebarSelFg: "#ffffff", SidebarCursorBg: "#f4f4f5",
+		Badge: "#3390ec", Link: "#3390ec", ReactBg: "#eef4fb", ReactMine: "#cfe3fa"}},
 	{"terminal", Theme{Layout: layoutPanels,
 		Text: "#d0d0d0", TextMuted: "#808080", Primary: "#5f5fd7", Accent: "#00d787", Warning: "#ffaf00", Error: "#ff005f",
 		Border: "#444444", Surface: "#262626", Selection: "#303030"}},

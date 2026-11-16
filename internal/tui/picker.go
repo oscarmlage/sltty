@@ -103,7 +103,7 @@ func (m *model) openPicker(kind pickKind, target *chat.Message) tea.Cmd {
 		if target.User == "you" {
 			whose = "your"
 		}
-		p.title, in.Placeholder = "React to "+whose+" message", "emoji name: any of Slack's or the workspace's"
+		p.title, in.Placeholder = "React to "+whose+" message", "emoji name (Telegram allows a set of reactions per chat)"
 		p.target, p.convID = *target, m.convID()
 		load = m.loadCustomEmoji() // for their names
 	case pickTheme:
@@ -230,6 +230,9 @@ func (m *model) refreshPicker() tea.Cmd {
 			name string
 			row  int
 		}{{"💬 Threads", rowThreads}, {"🔔 Activity", rowActivity}} {
+			if v.row == rowThreads && m.noThreads {
+				continue
+			}
 			if q != "" && strings.HasPrefix(strings.ToLower(v.name[strings.Index(v.name, " ")+1:]), q) {
 				p.items = append(p.items, pickItem{label: v.name, conv: v.row})
 			}

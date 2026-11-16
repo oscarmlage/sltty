@@ -51,6 +51,14 @@ func (m *model) sent(msg sentMsg) tea.Cmd {
 	}
 	m.status = "sent"
 	h := m.history[msg.id]
+	// A live backend may have brought it already.
+	if slices.ContainsFunc(h, func(x chat.Message) bool { return x.TS == msg.msg.TS }) {
+		m.replaceMsg(msg.id, msg.msg)
+		if t := m.thread; msg.root == "" || t == nil || t.root != msg.root ||
+			slices.ContainsFunc(t.msgs, func(x chat.Message) bool { return x.TS == msg.msg.TS }) {
+			return nil
+		}
+	}
 	if msg.root == "" {
 		delete(m.newFrom, msg.id) // writing in it, you have read it
 		follow := m.sel[msg.id] >= len(h)-1 || len(h) == 0
