@@ -147,6 +147,19 @@ func TestBlockKitShapes(t *testing.T) {
 	}
 }
 
+func TestLinkButtonsAreLinks(t *testing.T) {
+	body, _, _ := readBlocks(t, `[
+	 {"type":"section","text":{"type":"mrkdwn","text":"Please click on this button to authenticate in OKTA."}},
+	 {"type":"actions","elements":[
+	   {"type":"button","text":{"type":"plain_text","text":"Authenticate"},"action_id":"click_login_button","url":"https://okta.test/authorize?a=1&b=2"},
+	   {"type":"button","text":{"type":"plain_text","text":"Run"},"url":"javascript:alert(1)"},
+	   {"type":"button","text":{"type":"plain_text","text":"Ack"}}]}]`)
+	want := "[ <https://okta.test/authorize?a=1&amp;b=2|Authenticate> ] [ Run ] [ Ack ]"
+	if !strings.Contains(body, want) {
+		t.Fatalf("body lacks %q:\n%s", want, body)
+	}
+}
+
 func TestRichTextElements(t *testing.T) {
 	body, _, ok := readBlocks(t, `[{"type":"rich_text","elements":[
 	 {"type":"rich_text_section","elements":[
@@ -198,5 +211,19 @@ func TestBlocksWithNothingToSayAndBadShapes(t *testing.T) {
 	}
 	if _, _, ok := readBlocks(t, `[{"type":"section","text":5}]`); ok {
 		t.Fatal("a block that does not decode marks them all bad")
+	}
+}
+
+func TestLinkButtonReadsAsALink(t *testing.T) {
+	var m slackMessage
+	if err := json.Unmarshal([]byte(`{"ts":"1.0","user":"U1","text":"fallback","blocks":[
+	 {"type":"section","text":{"type":"mrkdwn","text":"Please click on this button to authenticate in OKTA."}},
+	 {"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"Authenticate"},"url":"https://okta.test/authorize?a=1&b=2"}]}]}`), &m); err != nil {
+		t.Fatal(err)
+	}
+	s := &Slack{users: map[string]string{"U1": "ana"}, urls: map[string]string{}}
+	want := "[ [Authenticate](https://okta.test/authorize?a=1&b=2) ]"
+	if x := s.message(m).Text; !strings.Contains(x, want) {
+		t.Fatalf("text %q lacks %q", x, want)
 	}
 }

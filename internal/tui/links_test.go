@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
+
 	"github.com/oscarmlage/sltty/internal/chat"
 )
 
@@ -74,4 +77,52 @@ func TestOpenURLRefusesNonWeb(t *testing.T) {
 	if err := openURL("file:///etc/passwd"); err == nil {
 		t.Fatal("opened a file: URL")
 	}
+}
+
+func TestButtonLinkInBrackets(t *testing.T) {
+	msg := &chat.Message{Text: "Please authenticate.\n[ [Authenticate](https://okta.test/authorize?a=1&b=2) ]"}
+	got := messageLinks(msg)
+	if len(got) != 1 || got[0].label != "Authenticate" || got[0].url != "https://okta.test/authorize?a=1&b=2" {
+		t.Fatalf("a link button inside brackets is one link by its label: %+v", got)
+	}
+}
+
+func TestLinkAt(t *testing.T) {
+	row := "\x1b[1m[ \x1b]8;;https://okta.test/a?b=1\x1b\\Authenticate\x1b]8;;\x1b\\ ]\x1b[0m 🙂 \x1b]8;;javascript:x\aRun\x1b]8;;\a"
+	for col, want := range map[int]string{0: "", 2: "https://okta.test/a?b=1", 13: "https://okta.test/a?b=1", 14: "", 17: "", 20: "", 99: ""} {
+		if got := linkAt(row, col); got != want {
+			t.Errorf("column %d: %q, want %q", col, got, want)
+		}
+	}
+}
+
+func TestClickOpensTheLinkUnderIt(t *testing.T) {
+	var opened []string
+	old := openURL
+	openURL = func(u string) error { opened = append(opened, u); return nil }
+	defer func() { openURL = old }()
+
+	m := newTest(t)
+	m.goTo(t, "tools-team")
+	m.render()
+	origin := m.mainX()
+	if boxed() {
+		origin++
+	}
+	for y, row := range m.layout.chatText {
+		if m.layout.chatMsg[y] < 0 {
+			continue
+		}
+		for x := range ansi.StringWidth(row) {
+			if u := linkAt(row, x); u != "" {
+				run(m, tea.MouseClickMsg{X: origin + x, Y: y + m.layout.top, Button: tea.MouseLeft})
+				run(m, tea.MouseReleaseMsg{X: origin + x, Y: y + m.layout.top, Button: tea.MouseLeft})
+				if len(opened) != 1 || opened[0] != u {
+					t.Fatalf("clicking %q opened %v", u, opened)
+				}
+				return
+			}
+		}
+	}
+	t.Skip("demo data draws no link in tools-team")
 }

@@ -10,8 +10,8 @@ import (
 
 // Mouse: a press on a divider starts a drag that follows the pointer until
 // release; any other click focuses the pane under it and picks the chat or
-// message under it, or enters INSERT on a composer; the wheel moves in the
-// pane under the pointer.
+// message under it (and opens the link under it, if any), or enters INSERT
+// on a composer; the wheel moves in the pane under the pointer.
 
 func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 	mo := msg.Mouse()
@@ -73,7 +73,7 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 			d := m.selectDrag
 			m.drag = 0
 			if d.startX == mo.X && d.startY == mo.Y {
-				return nil
+				return m.clickLink(d.pane, mo.X, mo.Y-m.layout.top) // a click, not a drag: open the link under it
 			}
 			d.endX, d.endY = mo.X, mo.Y
 			if text := m.draggedText(d); text != "" {

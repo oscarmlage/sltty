@@ -298,6 +298,11 @@ func (m *model) threadPane(w, rows int) []string {
 }
 
 func paneHeader(title, sub string, w int, focused bool) string {
+	// Channel topics can contain newlines. A pane header occupies exactly one
+	// row; letting one through shifts its rule and all subsequent content.
+	title = strings.Join(strings.Fields(title), " ")
+	sub = strings.Join(strings.Fields(sub), " ")
+
 	ts := headerStyle
 	if focused {
 		ts = headerFocus

@@ -11,7 +11,7 @@ import (
 // terminal wrapping almost useless. OSC-8 is ignored by terminals that do not
 // support hyperlinks and opens the URL on click in ones that do.
 var slackToken = regexp.MustCompile(`<([^>|]+)(?:\|([^>]+))?>`)
-var markdownLink = regexp.MustCompile(`\[([^\]]+)\]\((https?://[^)[:space:]]+)\)`)
+var markdownLink = regexp.MustCompile(`\[([^\[\]]+)\]\((https?://[^)[:space:]]+)\)`)
 var mentionToken = regexp.MustCompile(`(^|[^[:alnum:]_])(@[[:alnum:]_.-]+)`)
 var (
 	boldToken = regexp.MustCompile(`\*([^*\n]+)\*`)

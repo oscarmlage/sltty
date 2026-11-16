@@ -11,6 +11,14 @@ import (
 	"github.com/oscarmlage/sltty/internal/img"
 )
 
+func TestPaneHeaderFlattensMultilineTopics(t *testing.T) {
+	newTest(t) // initializes the shared styles
+	got := ansiStrip(paneHeader("#alerts", "Bots:\n/pd help for pagerduty", 80, false))
+	if strings.Contains(got, "\n") || !strings.Contains(got, "Bots: /pd help for pagerduty") {
+		t.Fatalf("multiline topic escaped its header: %q", got)
+	}
+}
+
 func TestPrivateChannelsHaveALock(t *testing.T) {
 	m := newTest(t)
 	s := screen(m)

@@ -462,7 +462,7 @@ func (m *model) sideLine(icon, name string, unread int, selected bool, w int) st
 	left := func(icon, label string) string { return fit("  "+icon+label, leftW) }
 	switch {
 	case selected && m.focus == paneSide:
-		return paint(sbSelText.Render(left(ansi.Strip(icon), name)+ansi.Strip(badge)), w, sbSelFocusBg)
+		return paint(sbSelText.Render(left(ansi.Strip(icon), name))+sbSelBadge.Render(fmt.Sprintf("%d", unread)), w, sbSelFocusBg)
 	case selected:
 		return paint(left(icon, sbBright.Render(name))+badge, w, sbSelBg)
 	case unread > 0:

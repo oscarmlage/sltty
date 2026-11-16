@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/oscarmlage/sltty/internal/chat"
 )
@@ -25,7 +26,7 @@ type link struct{ label, url string }
 type openedMsg struct{ err error }
 
 // linkToken finds [label](url) and bare http(s) URLs, in reading order.
-var linkToken = regexp.MustCompile(`\[([^\]]+)\]\((https?://[^)\s]+)\)|https?://[^\s<>()\[\]]+`)
+var linkToken = regexp.MustCompile(`\[([^\[\]]+)\]\((https?://[^)\s]+)\)|https?://[^\s<>()\[\]]+`)
 
 // messageLinks are the distinct http(s) links of a message: in its text,
 // the small print and its attachment cards.
@@ -149,4 +150,75 @@ var openURL = func(u string) error {
 	}
 	go func() { _ = cmd.Wait() }()
 	return nil
+}
+
+// linkAt is the URL of the hyperlink drawn at column col of a rendered row,
+// read from the OSC-8 marks the renderer put around each link's label.
+func linkAt(row string, col int) string {
+	cur, x := "", 0
+	for i := 0; i < len(row); {
+		if row[i] == '\x1b' && i+1 < len(row) {
+			switch row[i+1] {
+			case ']': // OSC, ended by ST (ESC \) or BEL
+				end, n := len(row), 0
+				if j := strings.Index(row[i:], "\x1b\\"); j >= 0 {
+					end, n = i+j, 2
+				}
+				if j := strings.IndexByte(row[i:], '\a'); j >= 0 && i+j < end {
+					end, n = i+j, 1
+				}
+				if body := row[i+2 : end]; strings.HasPrefix(body, "8;") {
+					_, cur, _ = strings.Cut(body[2:], ";")
+				}
+				i = end + n
+				continue
+			case '[': // CSI, ended by a byte in @..~
+				j := i + 2
+				for j < len(row) && (row[j] < 0x40 || row[j] > 0x7e) {
+					j++
+				}
+				i = j + 1
+				continue
+			}
+		}
+		g, w := ansi.FirstGraphemeCluster(row[i:], ansi.GraphemeWidth)
+		if g == "" {
+			break
+		}
+		if col >= x && col < x+max(w, 1) {
+			if isWebURL(cur) {
+				return cur
+			}
+			return ""
+		}
+		x += w
+		i += len(g)
+	}
+	return ""
+}
+
+// clickLink opens the link under a click in a message pane, if any.
+func (m *model) clickLink(p pane, x, y int) tea.Cmd {
+	rows := m.layout.chatText
+	if p == paneThread {
+		rows = m.layout.threadText
+	}
+	if y < 0 || y >= len(rows) || m.messageAt(p, y) < 0 {
+		return nil
+	}
+	origin := m.paneX(p)
+	if boxed() {
+		origin++
+	}
+	u := linkAt(rows[y], x-origin)
+	if u == "" {
+		return nil
+	}
+	m.status = "opening " + u
+	return func() tea.Msg {
+		if err := openURL(u); err != nil {
+			return openedMsg{fmt.Errorf("opening %s: %w", u, err)}
+		}
+		return openedMsg{}
+	}
 }

@@ -70,8 +70,9 @@ patterns only sets whether that built-in section starts folded.
 
 Messages read as in Slack: from their blocks when they have them (lists,
 quotes, warm code chips, the small print under an app's message and
-non-interactive action labels such as `[ Resolve ]`), mentions by name, links
-by their label (a click opens them where the terminal has OSC 8), and bot
+non-interactive action labels such as `[ Resolve ]`; a button that only opens a
+URL, such as a bot's `[ Authenticate ]`, is a link to it), mentions by name,
+links by their label (a click on one opens it, as `o` does), and bot
 messages under their profile's display name rather than a technical handle.
 
 ## Images and custom emoji

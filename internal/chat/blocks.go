@@ -3,6 +3,7 @@ package chat
 import (
 	"cmp"
 	"encoding/json"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -122,7 +123,16 @@ func blocksMrkdwn(blocks slackBlocks) (body string, context []string, ok bool) {
 			for _, e := range b.Elements {
 				switch e.Type {
 				case "button":
-					if label := strings.TrimSpace(string(e.Text)); label != "" {
+					label := strings.TrimSpace(string(e.Text))
+					if label == "" {
+						break
+					}
+					// A link button only opens its URL (Slack also tells the
+					// app it was clicked, which the terminal cannot), so show
+					// it as a link to that URL. Only web URLs are made links.
+					if u, err := url.Parse(e.URL); err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" {
+						actions = append(actions, "[ <"+escape(e.URL)+"|"+escape(label)+"> ]")
+					} else {
 						actions = append(actions, "[ "+label+" ]")
 					}
 				case "static_select", "external_select", "users_select", "conversations_select", "channels_select":

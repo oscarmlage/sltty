@@ -176,7 +176,7 @@ func (s *Slack) message(m slackMessage) Message {
 
 // mention finds Slack's <…> markup: <@U1>, <#C1|name>, <!here>, <url|label>.
 var mention = regexp.MustCompile(`<([^<>]+)>`)
-var markdownLinkText = regexp.MustCompile(`\[([^\]]+)\]\((https?://[^)[:space:]]+)\)`)
+var markdownLinkText = regexp.MustCompile(`\[([^\[\]]+)\]\((https?://[^)[:space:]]+)\)`)
 
 // mrkdwn turns Slack's markup into what a person reads: names for user
 // mentions, labels for links, and &, < and > for their entities.
