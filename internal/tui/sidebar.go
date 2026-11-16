@@ -462,7 +462,13 @@ func (m *model) sideLine(icon, name string, unread int, selected bool, w int) st
 	left := func(icon, label string) string { return fit("  "+icon+label, leftW) }
 	switch {
 	case selected && m.focus == paneSide:
-		return paint(sbSelText.Render(left(ansi.Strip(icon), name))+sbSelBadge.Render(fmt.Sprintf("%d", unread)), w, sbSelFocusBg)
+		// A selected read channel has no badge. Rendering one unconditionally
+		// leaves a stray, clipped glyph at the right edge on narrow sidebars.
+		selectedBadge := ""
+		if unread > 0 {
+			selectedBadge = sbSelBadge.Render(fmt.Sprintf("%d", unread))
+		}
+		return paint(sbSelText.Render(left(ansi.Strip(icon), name))+selectedBadge, w, sbSelFocusBg)
 	case selected:
 		return paint(left(icon, sbBright.Render(name))+badge, w, sbSelBg)
 	case unread > 0:

@@ -114,7 +114,7 @@ func (m *model) selectConv(i int) tea.Cmd {
 		}
 		return nil
 	}
-	return m.loadHistory(c.ID)
+	return m.loadCachedHistory(c.ID)
 }
 
 // openThread opens the thread of the selected message (an empty one starts

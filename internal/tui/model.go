@@ -8,7 +8,9 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/key"
@@ -18,6 +20,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/oscarmlage/sltty/internal/chat"
 	"github.com/oscarmlage/sltty/internal/img"
@@ -49,6 +52,11 @@ const (
 )
 
 type (
+	cachedHistoryMsg struct {
+		id   string
+		msgs []chat.Message
+		hit  bool
+	}
 	convsMsg struct {
 		convs []chat.Conversation
 		err   error
@@ -122,6 +130,8 @@ type Options struct {
 	ImageHeight    int
 	ComposerHeight int // text rows; 0 for the default
 	SidebarWidth   int // columns; 0 for the default
+	// HistoryCacheTTL is the on-disk history cache lifetime; 0 disables it.
+	HistoryCacheTTL time.Duration
 	// ReadOnEnter marks a conversation read when its messages receive focus.
 	ReadOnEnter *bool
 
@@ -143,6 +153,7 @@ type model struct {
 	convs   []chat.Conversation // channels first, then DMs
 	cursor  int                 // sidebar selection
 	history map[string][]chat.Message
+	cache   *historyCache
 	sel     map[string]int // selected message per conversation
 	chatOff int            // chat lines above the bottom
 	thread  *thread
@@ -256,6 +267,7 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		themeName:    cmpOr(opts.Theme, defaultTheme),
 		layoutName:   opts.Layout,
 		history:      map[string][]chat.Message{},
+		cache:        newHistoryCache(b.Workspace(), opts.HistoryCacheTTL),
 		sel:          map[string]int{},
 		drafts:       map[string]string{},
 		readThreads:  map[string]int{},
@@ -286,7 +298,21 @@ func (m *model) Init() tea.Cmd {
 	return tea.Batch(m.call(func(ctx context.Context) tea.Msg {
 		c, err := m.backend.Conversations(ctx)
 		return convsMsg{c, err}
-	}), m.loadPresence(), m.loadThreads(), m.loadActivity(), m.startSpinner())
+	}), m.loadPresence(), m.loadThreads(), m.loadActivity(), m.startSpinner(), graphemeWidthCmd(os.Getenv))
+}
+
+// graphemeWidthCmd makes the renderer measure text as the layout does.
+// Bubble Tea only switches to grapheme widths when a terminal answers the
+// mode 2027 query; kitty, Ghostty and WezTerm already draw emoji presentation
+// sequences (⚠️, ✈️) two cells wide but do not always answer it. Measured
+// with wcwidth as one cell, such a line overflows and wraps, and the next
+// frames repeat rows. The mode report is synthesized for those terminals.
+func graphemeWidthCmd(getenv func(string) string) tea.Cmd {
+	term, prog := getenv("TERM"), strings.ToLower(getenv("TERM_PROGRAM"))
+	if getenv("KITTY_WINDOW_ID") == "" && term != "xterm-kitty" && term != "xterm-ghostty" && prog != "ghostty" && prog != "wezterm" {
+		return nil
+	}
+	return func() tea.Msg { return tea.ModeReportMsg{Mode: ansi.ModeUnicodeCore, Value: ansi.ModeSet} }
 }
 
 // busy is whether something on screen waits for the backend with a spinner.
@@ -315,8 +341,21 @@ func (m *model) call(f func(context.Context) tea.Msg) tea.Cmd {
 func (m *model) loadHistory(id string) tea.Cmd {
 	return m.call(func(ctx context.Context) tea.Msg {
 		h, err := m.backend.History(ctx, id)
+		if err == nil {
+			m.cache.save(id, h)
+		}
 		return historyMsg{id, h, err}
 	})
+}
+
+func (m *model) loadCachedHistory(id string) tea.Cmd {
+	if m.cache == nil {
+		return m.loadHistory(id)
+	}
+	return func() tea.Msg {
+		h, hit := m.cache.load(id)
+		return cachedHistoryMsg{id: id, msgs: h, hit: hit}
+	}
 }
 
 func (m *model) loadReplies(id, root string) tea.Cmd {
@@ -387,13 +426,20 @@ func (m *model) target() *chat.Message {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.noteConnection(msg)
-	before := m.spot()
+	before, beforeView := m.spot(), m.view
 	_, cmd := m.update(msg)
 	if read := m.entered(before); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
 	if more := m.imageCmds(); more != nil {
 		cmd = tea.Batch(cmd, more)
+	}
+	if after := m.spot(); after.conv != before.conv || m.view != beforeView {
+		// The renderer only rewrites cells it believes changed. If the terminal
+		// ever disagrees with it (a glyph drawn at another width), stale cells
+		// survive and leak colours or rows across panes. Switching what the
+		// main pane shows nearly replaces the screen anyway: repaint it whole.
+		cmd = tea.Batch(cmd, tea.ClearScreen)
 	}
 	return m, cmd
 }
@@ -479,6 +525,12 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, m.selectConv(i)
+	case cachedHistoryMsg:
+		if msg.hit {
+			m.history[msg.id] = msg.msgs
+		}
+		// The cached view is immediate; Slack refreshes it in the background.
+		return m, m.loadHistory(msg.id)
 	case historyMsg:
 		if msg.err != nil {
 			m.err = msg.err.Error()

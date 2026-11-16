@@ -5,6 +5,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -50,6 +51,13 @@ func Run(b chat.Backend, opts Options) error {
 			}
 			if saved.SidebarWidth != 0 {
 				opts.SidebarWidth = saved.SidebarWidth
+			}
+			if saved.HistoryCache != nil {
+				if *saved.HistoryCache {
+					opts.HistoryCacheTTL = time.Duration(saved.HistoryCacheTTL) * time.Minute
+				} else {
+					opts.HistoryCacheTTL = 0
+				}
 			}
 		}
 	}
@@ -119,6 +127,7 @@ func (m *model) saveUIState() error {
 		return err
 	}
 	on, emoji := m.imgs.on, m.imgs.emoji
+	cacheOn := m.opts.HistoryCacheTTL > 0
 	current, ts := "", ""
 	if c := m.current(); c != nil {
 		current = c.ID
@@ -128,7 +137,7 @@ func (m *model) saveUIState() error {
 	}
 	s.Workspaces[m.backend.Workspace()] = uistate.Workspace{
 		Theme: m.themeName, Layout: m.layoutName, Clock: clockName(), ImagesOn: &on, CustomEmoji: &emoji,
-		ComposerHeight: m.inputRows, SidebarWidth: m.side, Collapsed: m.collapsed,
+		ComposerHeight: m.inputRows, SidebarWidth: m.side, HistoryCache: &cacheOn, HistoryCacheTTL: int(m.opts.HistoryCacheTTL / time.Minute), Collapsed: m.collapsed,
 		Conversation: current, SelectedTS: ts, ChatOffset: m.chatOff,
 	}
 	return uistate.Save(s)

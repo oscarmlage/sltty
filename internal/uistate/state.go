@@ -9,17 +9,19 @@ import (
 )
 
 type Workspace struct {
-	Theme          string          `json:"theme,omitempty"`
-	Layout         string          `json:"layout,omitempty"`
-	Clock          string          `json:"clock,omitempty"`
-	ImagesOn       *bool           `json:"images_on,omitempty"`
-	CustomEmoji    *bool           `json:"custom_emoji,omitempty"`
-	ComposerHeight int             `json:"composer_height,omitempty"`
-	SidebarWidth   int             `json:"sidebar_width,omitempty"`
-	Collapsed      map[string]bool `json:"collapsed,omitempty"`
-	Conversation   string          `json:"conversation,omitempty"`
-	SelectedTS     string          `json:"selected_ts,omitempty"`
-	ChatOffset     int             `json:"chat_offset,omitempty"`
+	Theme           string          `json:"theme,omitempty"`
+	Layout          string          `json:"layout,omitempty"`
+	Clock           string          `json:"clock,omitempty"`
+	ImagesOn        *bool           `json:"images_on,omitempty"`
+	CustomEmoji     *bool           `json:"custom_emoji,omitempty"`
+	ComposerHeight  int             `json:"composer_height,omitempty"`
+	SidebarWidth    int             `json:"sidebar_width,omitempty"`
+	HistoryCache    *bool           `json:"history_cache,omitempty"`
+	HistoryCacheTTL int             `json:"history_cache_ttl,omitempty"`
+	Collapsed       map[string]bool `json:"collapsed,omitempty"`
+	Conversation    string          `json:"conversation,omitempty"`
+	SelectedTS      string          `json:"selected_ts,omitempty"`
+	ChatOffset      int             `json:"chat_offset,omitempty"`
 }
 type State struct {
 	Workspaces map[string]Workspace `json:"workspaces"`

@@ -68,6 +68,12 @@ patterns only sets whether that built-in section starts folded.
 
 ## Messages
 
+`history_cache_ttl` is an opt-in local cache of the last 100 messages opened
+in each channel. It is in minutes (`0` disables it); expired entries are deleted.
+The Settings panel can toggle it and choose its lifetime. Cached messages live
+under the user cache directory with private permissions, and Slack refreshes
+them after they are shown.
+
 Messages read as in Slack: from their blocks when they have them (lists,
 quotes, warm code chips, the small print under an app's message and
 non-interactive action labels such as `[ Resolve ]`; a button that only opens a

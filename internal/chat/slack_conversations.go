@@ -6,6 +6,7 @@ import (
 	"context"
 	"net/url"
 	"strings"
+	"unicode"
 
 	"github.com/oscarmlage/sltty/internal/diag"
 )
@@ -55,7 +56,7 @@ func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
 			break
 		}
 	}
-	all = s.withSelfDM(ctx, all)
+	all = s.withSelfDM(ctx, uniqueConversations(all))
 	if sections, err := s.nativeSections(ctx); err == nil {
 		all = applyNativeSections(all, sections)
 	} else {
@@ -109,7 +110,7 @@ func (s *Slack) userBoot(ctx context.Context) ([]Conversation, error) {
 	}
 	// Both calls are best-effort: a Grid can restrict either, but userBoot
 	// still gives us a usable flat sidebar in that case.
-	out = s.withSelfDM(ctx, out)
+	out = s.withSelfDM(ctx, uniqueConversations(out))
 	if sections, err := s.nativeSections(ctx); err == nil {
 		out = applyNativeSections(out, sections)
 	} else {
@@ -232,6 +233,34 @@ func (s *Slack) nativeSections(ctx context.Context) ([]nativeSection, error) {
 	}
 	return out, nil
 }
+
+// nativeSectionName removes invisible formatting characters Slack can leave
+// in a section name. Without it, visually identical section names become two
+// different sidebar groups.
+func nativeSectionName(name string) string {
+	return strings.TrimSpace(strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Cf, r) {
+			return -1
+		}
+		return r
+	}, name))
+}
+
+// uniqueConversations protects both paginated and fallback responses from
+// duplicated IDs while keeping Slack's ordering.
+func uniqueConversations(convs []Conversation) []Conversation {
+	seen := make(map[string]bool, len(convs))
+	out := make([]Conversation, 0, len(convs))
+	for _, c := range convs {
+		if c.ID != "" && seen[c.ID] {
+			continue
+		}
+		seen[c.ID] = true
+		out = append(out, c)
+	}
+	return out
+}
+
 func applyNativeSections(convs []Conversation, sections []nativeSection) []Conversation {
 	byID := map[string]Conversation{}
 	for _, c := range convs {
@@ -241,8 +270,11 @@ func applyNativeSections(convs []Conversation, sections []nativeSection) []Conve
 	out := make([]Conversation, 0, len(convs))
 	for _, s := range sections {
 		for _, id := range s.IDs {
-			if c, ok := byID[id]; ok {
-				c.Section, c.SectionEmoji = s.Name, s.Emoji
+			if c, ok := byID[id]; ok && !used[id] {
+				// Slack can return the same conversation in more than one native
+				// section during a sidebar update. Keep its first (authoritative
+				// linked-order) occurrence rather than drawing it twice.
+				c.Section, c.SectionEmoji = nativeSectionName(s.Name), s.Emoji
 				out = append(out, c)
 				used[id] = true
 			}

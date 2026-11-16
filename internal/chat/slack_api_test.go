@@ -190,6 +190,23 @@ func TestConversations(t *testing.T) {
 	}
 }
 
+func TestNativeSectionNameDropsInvisibleFormatting(t *testing.T) {
+	if got := nativeSectionName(" ON\u200bCALL "); got != "ONCALL" {
+		t.Fatalf("section name %q", got)
+	}
+}
+
+func TestNativeSectionsDoNotRepeatAConversation(t *testing.T) {
+	convs := []Conversation{{ID: "C1", Name: "general"}, {ID: "C2", Name: "random"}}
+	got := applyNativeSections(convs, []nativeSection{
+		{Name: "First", IDs: []string{"C1", "C2"}},
+		{Name: "Again", IDs: []string{"C1"}},
+	})
+	if len(got) != 2 || got[0].Section != "First" || got[1].Section != "First" {
+		t.Fatalf("duplicated native section membership: %+v", got)
+	}
+}
+
 func TestConversationsEnterpriseFallback(t *testing.T) {
 	s, _ := apiServer(t, map[string]handler{
 		"users.conversations": func(url.Values) any { return obj{"ok": false, "error": "enterprise_is_restricted"} },

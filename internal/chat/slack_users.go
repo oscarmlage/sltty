@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // resolveUser looks a person up once: their name and their avatar's URL
@@ -100,27 +101,52 @@ func (s *Slack) resolveAuthor(ctx context.Context, id string) {
 	s.resolveUser(ctx, id)
 }
 
-// resolveUsers looks up the authors of msgs and the people they mention.
+// resolveUsers looks up distinct authors, mentions and reactors concurrently.
+// A busy channel can otherwise make its first history load wait for dozens of
+// sequential users.info calls. Eight workers keep that burst polite to Slack.
 func (s *Slack) resolveUsers(ctx context.Context, msgs []slackMessage) {
+	users, bots := map[string]bool{}, map[string]bool{}
 	for _, m := range msgs {
-		s.resolveUser(ctx, m.User)
-		if m.User == "" && m.Username == "" {
-			s.resolveBot(ctx, m.BotID) // for its name
+		if m.User != "" {
+			users[m.User] = true
+		} else if m.Username == "" && m.BotID != "" {
+			bots[m.BotID] = true
 		}
 		for _, id := range richUsers(m.Blocks) {
-			s.resolveUser(ctx, id)
+			users[id] = true
 		}
 		for _, r := range m.Reactions {
 			for _, id := range r.Users {
-				s.resolveUser(ctx, id)
+				users[id] = true
 			}
 		}
 		for _, sub := range mention.FindAllStringSubmatch(m.Text, -1) {
 			if ref, _, _ := strings.Cut(sub[1], "|"); strings.HasPrefix(ref, "@") {
-				s.resolveUser(ctx, ref[1:])
+				users[ref[1:]] = true
 			}
 		}
 	}
+	jobs := make(chan func(), len(users)+len(bots))
+	for id := range users {
+		id := id
+		jobs <- func() { s.resolveUser(ctx, id) }
+	}
+	for id := range bots {
+		id := id
+		jobs <- func() { s.resolveBot(ctx, id) }
+	}
+	close(jobs)
+	var wg sync.WaitGroup
+	for range min(8, len(users)+len(bots)) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for job := range jobs {
+				job()
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func (s *Slack) Presence(ctx context.Context) (bool, error) {

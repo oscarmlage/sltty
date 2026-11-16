@@ -42,6 +42,8 @@ type Config struct {
 	// sidebar's columns (26).
 	ComposerHeight int `json:"composer_height,omitempty"`
 	SidebarWidth   int `json:"sidebar_width,omitempty"`
+	// HistoryCacheTTL is the local history cache lifetime in minutes; 0 disables it.
+	HistoryCacheTTL int `json:"history_cache_ttl,omitempty"`
 	// ReadOnEnter marks a conversation read when it is opened; on by default.
 	ReadOnEnter *bool `json:"read_on_enter,omitempty"`
 }
@@ -105,4 +107,5 @@ var Reference = []Field{
 	{"image_height", "int", "14", "the tallest picture, in cells"},
 	{"composer_height", "int", "2", "text rows of a composer (+/- and dragging change it)"},
 	{"sidebar_width", "int", "26", "sidebar columns (</> and dragging change it)"},
+	{"history_cache_ttl", "int", "0", "local history cache lifetime in minutes; 0 disables it"},
 }

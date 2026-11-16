@@ -34,7 +34,7 @@ func TestSettingsPanel(t *testing.T) {
 	if m.inputRows != rows+2 || !strings.Contains(screen(m), `"composer_height": 4`) {
 		t.Fatalf("composer %d, want %d", m.inputRows, rows+2)
 	}
-	press(m, "j", "j", "enter") // keybindings, over the settings
+	press(m, "j", "j", "j", "j", "enter") // sidebar, cache and TTL, then keybindings
 	if !m.help || m.sheet == nil || m.sheet.title != "Keybindings" {
 		t.Fatal("enter on Keybindings did not open them")
 	}

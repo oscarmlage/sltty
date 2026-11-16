@@ -156,9 +156,16 @@ func convLabel(c chat.Conversation) string {
 
 // fit truncates or pads a styled line to exactly w columns.
 func fit(s string, w int) string {
-	s = ansi.Truncate(s, w, "…")
+	s = ansi.Truncate(expandTabs(s), w, "…")
 	return s + strings.Repeat(" ", max(0, w-lipgloss.Width(s)))
 }
+
+// expandTabs replaces tabs with spaces. Width functions count a tab as zero
+// columns, but the terminal jumps to the next tab stop: a tab in a Slack
+// message made its line wider than the screen, the terminal wrapped and
+// scrolled it, and rows of every pane were repeated or left with stale
+// colours until the next full repaint.
+func expandTabs(s string) string { return strings.ReplaceAll(s, "\t", "    ") }
 
 // paint fits a line to w columns on a background: bg is re-applied after
 // each segment's reset, which would otherwise end it.

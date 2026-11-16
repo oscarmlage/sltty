@@ -435,7 +435,7 @@ func (m *model) emojiText(name string) string {
 // words of the last search marked. Standard emoji are characters already
 // (emoji.Expand, before wrapping).
 func (m *model) richText(line string, words []string) string {
-	line = slackMrkdwn(line)
+	line = slackMrkdwn(expandTabs(line))
 	if !strings.Contains(line, ":") {
 		return highlight(line, words)
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -28,6 +29,8 @@ const (
 	setReadOnEnter
 	setComposer
 	setSidebar
+	setHistoryCache
+	setHistoryCacheTTL
 	setKeys
 	setConfig
 	setCount
@@ -93,6 +96,23 @@ func (m *model) changeSetting(d int) {
 		m.setInputRows(m.inputRows + d)
 	case setSidebar:
 		m.setSide(m.side + d*2)
+	case setHistoryCache:
+		if m.opts.HistoryCacheTTL > 0 {
+			m.opts.HistoryCacheTTL, m.cache = 0, nil
+		} else {
+			m.opts.HistoryCacheTTL = 30 * time.Minute
+			m.cache = newHistoryCache(m.backend.Workspace(), m.opts.HistoryCacheTTL)
+		}
+	case setHistoryCacheTTL:
+		choices := []time.Duration{5 * time.Minute, 30 * time.Minute, 2 * time.Hour, 24 * time.Hour, 7 * 24 * time.Hour, 30 * 24 * time.Hour, 60 * 24 * time.Hour}
+		i := slices.Index(choices, m.opts.HistoryCacheTTL)
+		if i < 0 {
+			i = 1
+		}
+		m.opts.HistoryCacheTTL = choices[(i+d+len(choices))%len(choices)]
+		if m.opts.HistoryCacheTTL > 0 {
+			m.cache = newHistoryCache(m.backend.Workspace(), m.opts.HistoryCacheTTL)
+		}
 	}
 }
 
@@ -109,6 +129,18 @@ func onOff(b bool) string {
 		return "on"
 	}
 	return "off"
+}
+
+func cacheTTLName(d time.Duration) string {
+	switch d {
+	case 7 * 24 * time.Hour:
+		return "7 days"
+	case 30 * 24 * time.Hour:
+		return "30 days"
+	case 60 * 24 * time.Hour:
+		return "60 days"
+	}
+	return d.String()
 }
 
 // slider is a bar of w cells filled for v in lo..hi.
@@ -149,6 +181,8 @@ func (m *model) overlaySettings(rows []string) {
 		{"Read on enter", "‹ " + onOff(m.readOnEnter) + " ›"},
 		{"Composer", slider(m.inputRows, 1, max(2, m.contentRows()/2), 16) + fmt.Sprintf(" %d rows", m.inputRows)},
 		{"Sidebar", slider(m.side, minSide, max(minSide+1, maxSide), 16) + fmt.Sprintf(" %d cols", m.side)},
+		{"History cache", "‹ " + onOff(m.opts.HistoryCacheTTL > 0) + " ›"},
+		{"Cache TTL", "‹ " + cacheTTLName(m.opts.HistoryCacheTTL) + " ›"},
 		{"Keybindings", dimStyle.Render("enter ›")},
 		{"Config file", dimStyle.Render("enter ›")},
 	}
@@ -166,6 +200,7 @@ func (m *model) overlaySettings(rows []string) {
 	k := m.km.first
 	keep := fmt.Sprintf(`"theme": %q, "layout": %q, "clock": %q, "images": %q, "read_on_enter": %t, "composer_height": %d, "sidebar_width": %d`,
 		m.themeName, layout, clockName(), map[bool]string{true: cmpOr(m.opts.Images, "auto"), false: "off"}[m.imgs.on], m.readOnEnter, m.inputRows, m.side)
+	keep += fmt.Sprintf(`, "history_cache_ttl": %d`, int(m.opts.HistoryCacheTTL/time.Minute))
 	body = append(body, "", dimStyle.Render("to keep it, in "+m.opts.ConfigPath+":"))
 	for _, l := range wrapPlain(keep, inner) {
 		body = append(body, keyStyle.Render(l))

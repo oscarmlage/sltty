@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/oscarmlage/sltty/internal/chat"
 	"github.com/oscarmlage/sltty/internal/config"
@@ -130,7 +131,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	return runTUI(backend, tui.Options{
 		Keys: cfg.Keys, Theme: cfg.Theme, Layout: cfg.Layout, Clock: cfg.Clock, Themes: cfg.Themes, Sections: sections, PrivateIcon: cfg.PrivateIcon,
 		Version: version, Images: cfg.Images, CustomEmoji: cfg.CustomEmoji == nil || *cfg.CustomEmoji, ImageWidth: cfg.ImageWidth, ImageHeight: cfg.ImageHeight,
-		ComposerHeight: cfg.ComposerHeight, SidebarWidth: cfg.SidebarWidth,
+		ComposerHeight: cfg.ComposerHeight, SidebarWidth: cfg.SidebarWidth, HistoryCacheTTL: time.Duration(cfg.HistoryCacheTTL) * time.Minute,
 		ConfigPath: *cfgPath, ConfigFound: found, LogPath: diag.Path(), StatePath: uistate.Path(),
 	})
 }
