@@ -35,8 +35,16 @@ func fg(c string) lipgloss.Style { return lipgloss.NewStyle().Foreground(lipglos
 func applyTheme(t Theme) {
 	theme = t
 	c := lipgloss.Color
-	paneBg, surfaceBg = bgSeq(t.Background), bgSeq(t.Surface)
+	// The theme's background is the terminal's own while sltty runs (the
+	// view sets it, see View), never painted cell by cell: the renderer
+	// scrolls and erases lines assuming the terminal fills them with the
+	// current background (bce), and on a painted background terminals that
+	// do it differently were left with repeated rows (channels twice).
+	paneBg, surfaceBg = "", bgSeq(t.Surface)
 	sbBg, sbSelBg, sbSelFocusBg, selBg = bgSeq(t.SidebarBg), bgSeq(t.SidebarCursorBg), bgSeq(t.SidebarSelBg), bgSeq(t.Selection)
+	if t.SidebarBg == t.Background {
+		sbBg = "" // the same: the terminal's background as well
+	}
 	// A drag selection must stand apart from the persistent message cursor.
 	dragSelBg = bgSeq(mix(cmpOr(t.Background, "#000000"), t.Accent, 0.42))
 	if t.Background == "" {

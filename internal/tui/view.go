@@ -70,6 +70,12 @@ func (m *model) View() tea.View {
 		diag.Printf("tui: slow frame %s", d.Round(time.Millisecond))
 	}
 	v := tea.NewView(content)
+	if theme.Background != "" {
+		// The theme's background and text colors are the terminal's while
+		// sltty runs (restored on quit); see applyTheme.
+		v.BackgroundColor = lipgloss.Color(theme.Background)
+		v.ForegroundColor = lipgloss.Color(theme.Text)
+	}
 	v.AltScreen = true
 	v.MouseMode = tea.MouseModeCellMotion // motion while a button is held: divider drag
 	return v

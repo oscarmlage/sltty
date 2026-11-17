@@ -133,3 +133,30 @@ func TestThemePickerPreviewsAndReverts(t *testing.T) {
 		t.Fatal("L did not switch to the slack layout")
 	}
 }
+
+// A theme's background is the terminal's own while sltty runs, not painted
+// cell by cell: the renderer's scrolls and erases fill with the terminal's
+// background, and a painted one left repeated rows behind.
+func TestThemeBackgroundIsTheTerminals(t *testing.T) {
+	m := newTest(t)
+	t.Cleanup(func() { m.setTheme(defaultTheme, "") })
+	m.setTheme("nord", "")
+	v := m.View()
+	if v.BackgroundColor == nil || v.ForegroundColor == nil {
+		t.Fatal("nord: the view does not set the terminal's colors")
+	}
+	if r, g, b, _ := v.BackgroundColor.RGBA(); r>>8 != 0x2e || g>>8 != 0x34 || b>>8 != 0x40 {
+		t.Fatalf("background %v", v.BackgroundColor)
+	}
+	if bg := bgSeq(theme.Background); strings.Contains(v.Content, bg) {
+		t.Fatal("nord's background is still painted cell by cell")
+	}
+	if !strings.Contains(v.Content, bgSeq(theme.SidebarBg)) {
+		t.Fatal("the sidebar keeps its own color")
+	}
+	// On the terminal's background (aubergine), the terminal is left alone.
+	m.setTheme(defaultTheme, "")
+	if v := m.View(); v.BackgroundColor != nil || v.ForegroundColor != nil {
+		t.Fatal("aubergine must not change the terminal's colors")
+	}
+}

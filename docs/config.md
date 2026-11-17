@@ -42,7 +42,10 @@ stay current.
 Each account has its own theme and layout: pick one with `T` (or `;`)
 while in its tab and it is kept for that account. Without one saved, an
 account takes the config's `theme`, and Telegram the `telegram` theme when
-the config sets none. The other settings (clock, images, sizes, reading,
+the config sets none. A theme with a background (all but `aubergine` and
+`terminal`) makes it the terminal's own while sltty runs, and puts the
+terminal's back on quit; terminals that cannot change it (OSC 11) keep
+theirs. The other settings (clock, images, sizes, reading,
 history cache) are one set for all the accounts. Searches, the switcher, drafts, sections
 and the history cache belong to each account: `ctrl+f` searches the
 account in front. `sections` in the config apply to Slack; Telegram keeps
