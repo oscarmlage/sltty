@@ -383,7 +383,11 @@ func (t *Telegram) Send(ctx context.Context, id, rootTS, text string) (Message, 
 	if err != nil {
 		return Message{}, err
 	}
+	text, ents := t.mentions(text)
 	req := &tg.MessagesSendMessageRequest{Peer: peer, Message: text, RandomID: randomID()}
+	if len(ents) > 0 {
+		req.SetEntities(ents)
+	}
 	if reply != nil {
 		req.SetReplyTo(reply)
 	}
@@ -412,7 +416,11 @@ func (t *Telegram) Reply(ctx context.Context, id, ts, text string) (Message, err
 	if err != nil {
 		return Message{}, err
 	}
+	text, ents := t.mentions(text)
 	req := &tg.MessagesSendMessageRequest{Peer: peer, Message: text, RandomID: randomID()}
+	if len(ents) > 0 {
+		req.SetEntities(ents)
+	}
 	req.SetReplyTo(&tg.InputReplyToMessage{ReplyToMsgID: n})
 	upd, err := t.api.MessagesSendMessage(ctx, req)
 	if err != nil {
@@ -489,8 +497,12 @@ func (t *Telegram) Edit(ctx context.Context, id, ts, text string) (Message, erro
 	if err != nil {
 		return Message{}, err
 	}
+	text, ents := t.mentions(text)
 	req := &tg.MessagesEditMessageRequest{Peer: peer, ID: n}
 	req.SetMessage(text)
+	if len(ents) > 0 {
+		req.SetEntities(ents)
+	}
 	upd, err := t.api.MessagesEditMessage(ctx, req)
 	if err != nil {
 		return Message{}, err
@@ -867,7 +879,11 @@ func (t *Telegram) Upload(ctx context.Context, id, rootTS, text string, f Upload
 		media = &tg.InputMediaUploadedDocument{File: file, MimeType: mime,
 			Attributes: []tg.DocumentAttributeClass{&tg.DocumentAttributeFilename{FileName: f.Name}}}
 	}
+	text, ents := t.mentions(text)
 	req := &tg.MessagesSendMediaRequest{Peer: peer, Media: media, Message: text, RandomID: randomID()}
+	if len(ents) > 0 {
+		req.SetEntities(ents)
+	}
 	if reply != nil {
 		req.SetReplyTo(reply)
 	}

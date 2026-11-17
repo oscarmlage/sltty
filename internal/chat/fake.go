@@ -473,3 +473,28 @@ func (f *Fake) Upload(ctx context.Context, id, root, text string, up Upload) (Me
 	}
 	return m, nil
 }
+
+// fakePeople are the demo's people and their full names.
+var fakePeople = []Person{{"ana", "ana", "Ana López"}, {"bob", "bob", "Bob Smith"}, {"carol", "carol", "Carol Díaz"},
+	{"dave", "dave", "Dave Kim"}, {"erin", "erin", "Erin Walsh"}, {"frank", "frank", "Frank Ortega"}}
+
+// People are the demo's people whose name or full name starts with query.
+func (f *Fake) People(_ context.Context, _, query string) ([]Person, error) {
+	q := strings.ToLower(query)
+	var out []Person
+	for _, p := range fakePeople {
+		if q != "" && (strings.HasPrefix(p.Name, q) || strings.HasPrefix(strings.ToLower(p.Full), q)) {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
+func (f *Fake) PersonName(id string) (string, bool) {
+	for _, p := range fakePeople {
+		if p.ID == id {
+			return p.Name, true
+		}
+	}
+	return "", false
+}

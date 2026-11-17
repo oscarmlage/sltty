@@ -207,7 +207,9 @@ type Telegram struct {
 	// account) to their conversation: deletions name the IDs only.
 	seen   map[int]string
 	quotes map[string]Quote // "conv/id" → who wrote it, its beginning
-	events chan Event
+	// memberIDs are the users of each chat, for mentions (fetched once).
+	memberIDs map[string][]int64
+	events    chan Event
 }
 
 // tgFile is where File downloads a picture from.
@@ -262,7 +264,7 @@ func newTelegramState() *Telegram {
 	return &Telegram{
 		users: map[int64]*tg.User{}, chats: map[int64]*tg.Chat{}, channels: map[int64]*tg.Channel{},
 		files: map[string]tgFile{}, pinned: map[string]bool{}, archived: map[string]bool{}, muted: map[string]bool{}, marked: map[string]bool{}, seen: map[int]string{},
-		quotes: map[string]Quote{},
+		quotes: map[string]Quote{}, memberIDs: map[string][]int64{},
 		events: make(chan Event, 1024),
 	}
 }

@@ -268,6 +268,22 @@ type Uploader interface {
 	Upload(ctx context.Context, convID, rootTS, text string, f Upload) (Message, error)
 }
 
+// Person is someone a message can mention: Name is how the mention reads
+// (after the @), Full their full name, for finding and showing them.
+type Person struct {
+	ID, Name, Full string
+}
+
+// Mentioner is a Backend whose messages can mention people. People finds
+// whom: the conversation's members first, then anyone matching query
+// (empty: just the members). In the text Send, Reply, Upload and Edit take,
+// a mention is written <@ID>, as Slack does; each service makes it its own.
+type Mentioner interface {
+	People(ctx context.Context, convID, query string) ([]Person, error)
+	// PersonName is the name a mention of id reads as, when known.
+	PersonName(id string) (string, bool)
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error
