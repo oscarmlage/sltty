@@ -288,6 +288,9 @@ func (m *model) paneAction(a action) tea.Cmd {
 		if m.focus == paneSide {
 			m.toggleSection("")
 		}
+	case actUnreadOnly:
+		m.unreadOnly = !m.unreadOnly
+		m.status = map[bool]string{true: "sidebar: unread chats only", false: "sidebar: all chats"}[m.unreadOnly]
 	case actGrow:
 		m.setInputRows(m.inputRows + 1)
 	case actShrink:

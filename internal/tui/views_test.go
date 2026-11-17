@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
@@ -54,6 +55,26 @@ func TestCustomSections(t *testing.T) {
 	}
 	if err := validateSections([]Section{{Name: "x", Channels: []string{"[bad"}}}); err == nil {
 		t.Fatal("bad pattern accepted")
+	}
+}
+
+func TestUnreadOnlySidebarKeepsSwitcherComplete(t *testing.T) {
+	m := newTest(t)
+	press(m, "U")
+	if !m.unreadOnly {
+		t.Fatal("U did not enable unread-only sidebar")
+	}
+	for _, it := range m.sideOrder() {
+		if it.kind == sideConv && m.convs[it.conv].Unread == 0 {
+			t.Fatalf("read chat %q in unread-only sidebar", m.convs[it.conv].Name)
+		}
+	}
+	press(m, "ctrl+p")
+	if m.picker == nil {
+		t.Fatal("switcher did not open")
+	}
+	if !slices.ContainsFunc(m.picker.items, func(it pickItem) bool { return it.conv >= 0 && m.convs[it.conv].Name == "general" }) {
+		t.Fatal("switcher hid a read chat")
 	}
 }
 

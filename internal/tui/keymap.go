@@ -71,6 +71,7 @@ const (
 	actGrow        action = "composer_taller"
 	actShrink      action = "composer_shorter"
 	actFold        action = "toggle_section"
+	actUnreadOnly  action = "toggle_unread_sidebar"
 	actToggleRead  action = "toggle_read"
 	actView        action = "view_picture"
 	actLinks       action = "links"
@@ -105,6 +106,7 @@ var defaults = []binding{
 	{actNextMatch, scNormal, "Move around", "next search result (older)", []string{"n"}},
 	{actPrevMatch, scNormal, "Move around", "previous search result", []string{"N"}},
 	{actFold, scNormal, "Move around", "fold / unfold the sidebar section", []string{"space", "z a"}},
+	{actUnreadOnly, scNormal, "Move around", "sidebar: unread chats / all chats", []string{"U"}},
 
 	{actOpen, scNormal, "Messages", "open the chat / the thread (Telegram: reply to the message)", []string{"enter"}},
 	{actThread, scNormal, "Messages", "open the thread (Telegram: its replies, a post's comments)", []string{"t"}},

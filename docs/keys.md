@@ -11,8 +11,9 @@ emoji and the workspace's own, as in slk), `o` lists the message's links and ope
 or `1`-`9`, no mouse needed; it uses `open` / `xdg-open`), `v` opens the message's picture
 full screen, `e` edits your message (`↑` in an empty composer
 edits your last one), `u` toggles read / unread (on a message: unread from
-there on; on a thread or an activity entry: just that one; what `u` marks
-unread stays so until you leave the chat and enter it again: `j/k` in the
+there on; on a thread or an activity entry: just that one; `U` toggles the
+sidebar between unread chats and all chats (the switcher still includes all
+chats); what `u` marks unread stays so until you leave the chat and enter it again: `j/k` in the
 sidebar only previews a chat, `enter`, `l` or a click enters it). On Telegram
 `u` marks the whole chat unread on the server, as Telegram's "Mark as unread"
 does, and it shows so on every device until read; on Slack it is local to
@@ -78,6 +79,7 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | Move around | NORMAL | `next_match` | `n` | next search result (older) |
 | Move around | NORMAL | `prev_match` | `N` | previous search result |
 | Move around | NORMAL | `toggle_section` | `space`, `z a` | fold / unfold the sidebar section |
+| Move around | NORMAL | `toggle_unread_sidebar` | `U` | sidebar: unread chats / all chats |
 | Messages | NORMAL | `open` | `enter` | open the chat / the thread (Telegram: reply to the message) |
 | Messages | NORMAL | `thread` | `t` | open the thread (Telegram: its replies, a post's comments) |
 | Messages | NORMAL | `reply` | — | reply in the thread |

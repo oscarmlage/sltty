@@ -102,6 +102,7 @@ func TestSaveUIStateNeedsAPathAndRecordsTheView(t *testing.T) {
 		t.Fatalf("no state path: %v", err)
 	}
 	m.opts.StatePath = uistate.Path()
+	m.unreadOnly = true
 	m.goTo(t, "tools-team")
 	press(m, "l", "k")
 	if err := m.saveUIState(); err != nil {
@@ -109,7 +110,7 @@ func TestSaveUIStateNeedsAPathAndRecordsTheView(t *testing.T) {
 	}
 	s, _ := uistate.Load()
 	w := s.Workspaces[m.backend.Workspace()]
-	if w.Conversation == "" || w.ImagesOn == nil || w.SidebarWidth == 0 {
+	if w.Conversation == "" || w.ImagesOn == nil || w.SidebarWidth == 0 || !w.UnreadOnly {
 		t.Fatalf("saved workspace: %+v", w)
 	}
 }

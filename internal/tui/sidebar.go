@@ -101,7 +101,7 @@ func (m *model) sections() []section {
 			}
 			out[at].convs = append(out[at].convs, i)
 		}
-		return out
+		return m.unreadSections(out)
 	}
 	custom := m.customSections()
 	out := make([]section, 0, len(custom)+2)
@@ -132,7 +132,23 @@ func (m *model) sections() []section {
 			return cmp.Compare(matchIndex(s.Channels, m.convs[a]), matchIndex(s.Channels, m.convs[b]))
 		})
 	}
-	return append(out, channels, dms)
+	return m.unreadSections(append(out, channels, dms))
+}
+
+// unreadSections removes read conversations from the sidebar view only.
+// m.convs stays complete, so the switcher and search always see every chat.
+func (m *model) unreadSections(in []section) []section {
+	if !m.unreadOnly {
+		return in
+	}
+	out := make([]section, 0, len(in))
+	for _, s := range in {
+		s.convs = slices.DeleteFunc(s.convs, func(i int) bool { return m.convs[i].Unread == 0 })
+		if len(s.convs) > 0 {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 const (

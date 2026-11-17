@@ -16,6 +16,7 @@ type Workspace struct {
 	CustomEmoji     *bool           `json:"custom_emoji,omitempty"`
 	ComposerHeight  int             `json:"composer_height,omitempty"`
 	SidebarWidth    int             `json:"sidebar_width,omitempty"`
+	UnreadOnly      bool            `json:"unread_only,omitempty"`
 	HistoryCache    *bool           `json:"history_cache,omitempty"`
 	HistoryCacheTTL int             `json:"history_cache_ttl,omitempty"`
 	Collapsed       map[string]bool `json:"collapsed,omitempty"`

@@ -29,6 +29,7 @@ const (
 	setReadOnEnter
 	setComposer
 	setSidebar
+	setUnreadOnly
 	setHistoryCache
 	setHistoryCacheTTL
 	setKeys
@@ -96,6 +97,8 @@ func (m *model) changeSetting(d int) {
 		m.setInputRows(m.inputRows + d)
 	case setSidebar:
 		m.setSide(m.side + d*2)
+	case setUnreadOnly:
+		m.unreadOnly = !m.unreadOnly
 	case setHistoryCache:
 		if m.opts.HistoryCacheTTL > 0 {
 			m.opts.HistoryCacheTTL, m.cache = 0, nil
@@ -181,6 +184,7 @@ func (m *model) overlaySettings(rows []string) {
 		{"Read on enter", "‹ " + onOff(m.readOnEnter) + " ›"},
 		{"Composer", slider(m.inputRows, 1, max(2, m.contentRows()/2), 16) + fmt.Sprintf(" %d rows", m.inputRows)},
 		{"Sidebar", slider(m.side, minSide, max(minSide+1, maxSide), 16) + fmt.Sprintf(" %d cols", m.side)},
+		{"Sidebar chats", "‹ " + map[bool]string{true: "unread only", false: "all"}[m.unreadOnly] + " ›"},
 		{"History cache", "‹ " + onOff(m.opts.HistoryCacheTTL > 0) + " ›"},
 		{"Cache TTL", "‹ " + cacheTTLName(m.opts.HistoryCacheTTL) + " ›"},
 		{"Keybindings", dimStyle.Render("enter ›")},

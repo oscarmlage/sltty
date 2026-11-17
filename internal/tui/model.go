@@ -196,6 +196,7 @@ type model struct {
 	readActivity map[string]bool   // activity ID → read (true) or marked unread
 	unreadThread map[string]bool   // thread key → marked unread with u
 	collapsed    map[string]bool   // section name → folded, once toggled
+	unreadOnly   bool              // sidebar hides read conversations
 	onSection    string            // the sidebar cursor is on this section's header
 	newFrom      map[string]string // conversation → first unread message, for the New line
 	found        *found            // the last search picked from: n/N walk it, its words are marked
