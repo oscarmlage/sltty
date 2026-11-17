@@ -37,6 +37,11 @@ type Conversation struct {
 	Folded bool
 	// VIP: a direct message with one of the user's VIPs (Slack).
 	VIP bool
+	// Self: the chat with yourself (Telegram's Saved Messages, Slack's
+	// DM to yourself), always listed.
+	Self bool
+	// Group: a group DM (Slack's mpdm), with this many people besides you.
+	Group int
 }
 
 // ThreadSummary is a thread the user takes part in, for the Threads view.

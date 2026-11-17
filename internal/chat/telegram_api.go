@@ -188,7 +188,7 @@ func (t *Telegram) conversation(d tg.Dialog) (Conversation, bool) {
 		}
 		c.Kind, c.Name = DM, userName(u)
 		if u.Self {
-			c.Name = "Saved Messages"
+			c.Name, c.Self = "Saved Messages", true
 		}
 		_, c.Online = u.Status.(*tg.UserStatusOnline)
 		switch {

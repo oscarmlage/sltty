@@ -80,6 +80,11 @@ any chat, `enter` opens a thread on the right or jumps to the message.
 On Telegram, `enter` on a message replies to it as Telegram's apps do: the
 composer says whom it answers (`esc` drops it) and the reply goes to the
 chat, quoting the message; `t` opens its thread (replies, a post's comments).
+The chat with yourself (Telegram's Saved Messages, your own DM on Slack,
+named with your handle) is always listed, even with `U`'s unread-only
+sidebar. Slack's group DMs read as their people, with how many before the
+names (`2 ana, bob`), as Slack shows them.
+
 On Slack, the DMs with your VIPs (Slack's own list) that have unread
 messages go to a ⭐ VIP section above everything; read, they go back to
 their place once you leave them. Private channels show 🔒 (`private_icon` changes it, e.g. `◆`). Custom

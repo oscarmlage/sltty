@@ -147,7 +147,7 @@ func NewFake() *Fake {
 		line{text: "bob: here is the diagram I mentioned :party-parrot:", files: []string{"F2"}})
 	add(Conversation{ID: "D3", Name: "carol", Kind: DM, Online: true}, today,
 		l("carol: are you shipping the runner change, or should I do it?"))
-	add(Conversation{ID: "D4", Name: "you", Kind: DM}, today,
+	add(Conversation{ID: "D4", Name: "you", Kind: DM, Self: true}, today,
 		l("you: scratchpad: compare the sidebar density before the demo"),
 		l("you: test links, attachment cards, and unread markers here"),
 		l("you: remember to save the preferred layout before quitting"))

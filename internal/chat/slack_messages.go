@@ -211,7 +211,7 @@ func parseSlackTS(v string) (time.Time, error) {
 }
 func (s *Slack) user(id string) string {
 	if id == s.me {
-		return "you"
+		return s.Me()
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -5,6 +5,7 @@ package chat
 import (
 	"context"
 	"net/url"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -24,6 +25,7 @@ func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
 					Value string `json:"value"`
 				} `json:"topic"`
 				IsIM               bool   `json:"is_im"`
+				IsMpim             bool   `json:"is_mpim"`
 				IsPrivate          bool   `json:"is_private"`
 				User               string `json:"user"`
 				UnreadCountDisplay int    `json:"unread_count_display"`
@@ -50,14 +52,15 @@ func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
 				s.resolveUser(ctx, c.User)
 				name = s.user(c.User)
 			}
-			all = append(all, Conversation{ID: c.ID, Name: name, Kind: kind, Topic: c.Topic.Value, Unread: c.UnreadCountDisplay, Private: c.IsPrivate, VIP: kind == DM && vips[c.User]})
+			all = append(all, Conversation{ID: c.ID, Name: name, Kind: kind, Topic: c.Topic.Value, Unread: c.UnreadCountDisplay, Private: c.IsPrivate,
+				VIP: kind == DM && vips[c.User], Self: c.IsIM && c.User == s.me})
 		}
 		cursor = r.ResponseMetadata.NextCursor
 		if cursor == "" {
 			break
 		}
 	}
-	all = s.withSelfDM(ctx, uniqueConversations(all))
+	all = s.withSelfDM(ctx, s.groupDMs(uniqueConversations(all)))
 	if sections, err := s.nativeSections(ctx); err == nil {
 		all = applyNativeSections(all, sections)
 	} else {
@@ -107,11 +110,11 @@ func (s *Slack) userBoot(ctx context.Context, vips map[string]bool) ([]Conversat
 			continue
 		}
 		s.resolveUser(ctx, im.User)
-		out = append(out, Conversation{ID: im.ID, Name: s.user(im.User), Kind: DM, VIP: vips[im.User]})
+		out = append(out, Conversation{ID: im.ID, Name: s.user(im.User), Kind: DM, VIP: vips[im.User], Self: im.User == s.me})
 	}
 	// Both calls are best-effort: a Grid can restrict either, but userBoot
 	// still gives us a usable flat sidebar in that case.
-	out = s.withSelfDM(ctx, uniqueConversations(out))
+	out = s.withSelfDM(ctx, s.groupDMs(uniqueConversations(out)))
 	if sections, err := s.nativeSections(ctx); err == nil {
 		out = applyNativeSections(out, sections)
 	} else {
@@ -134,7 +137,7 @@ func (s *Slack) userBoot(ctx context.Context, vips map[string]bool) ([]Conversat
 func moveSelfDMEnd(convs []Conversation) []Conversation {
 	at := -1
 	for i, c := range convs {
-		if c.Kind == DM && c.Name == "you" {
+		if c.Self {
 			at = i
 			break
 		}
@@ -153,7 +156,7 @@ func moveSelfDMEnd(convs []Conversation) []Conversation {
 // does not post a message.
 func (s *Slack) withSelfDM(ctx context.Context, convs []Conversation) []Conversation {
 	for _, c := range convs {
-		if c.Kind == DM && c.Name == "you" {
+		if c.Self {
 			return convs
 		}
 	}
@@ -170,12 +173,44 @@ func (s *Slack) withSelfDM(ctx context.Context, convs []Conversation) []Conversa
 		}
 		return convs
 	}
-	for _, c := range convs {
+	for i, c := range convs {
 		if c.ID == r.Channel.ID {
+			convs[i].Self = true
 			return convs
 		}
 	}
-	return append(convs, Conversation{ID: r.Channel.ID, Name: "you", Kind: DM})
+	return append(convs, Conversation{ID: r.Channel.ID, Name: s.Me(), Kind: DM, Self: true})
+}
+
+// groupDMs names Slack's group DMs as its own clients do: the people in
+// them but you ("ana, bob, carol"), not "mpdm-ana--bob--carol--you-1".
+func (s *Slack) groupDMs(convs []Conversation) []Conversation {
+	for i, c := range convs {
+		people, ok := mpdmPeople(c.Name)
+		if !ok {
+			continue
+		}
+		people = slices.DeleteFunc(people, func(p string) bool { return p == s.Me() })
+		convs[i].Kind, convs[i].Private, convs[i].Group = DM, false, len(people)
+		convs[i].Name = strings.Join(people, ", ")
+	}
+	return convs
+}
+
+// mpdmPeople are the handles in a group DM's name: mpdm-a--b--c-1.
+func mpdmPeople(name string) ([]string, bool) {
+	rest, ok := strings.CutPrefix(name, "mpdm-")
+	if !ok {
+		return nil, false
+	}
+	if i := strings.LastIndex(rest, "-"); i > 0 && strings.Trim(rest[i+1:], "0123456789") == "" {
+		rest = rest[:i]
+	}
+	people := strings.Split(rest, "--")
+	if len(people) < 2 || slices.Contains(people, "") {
+		return nil, false
+	}
+	return people, true
 }
 
 type nativeSection struct {

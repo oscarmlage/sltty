@@ -77,7 +77,7 @@ func TestNewSlackValidatesTheSession(t *testing.T) {
 	if err := s.call(context.Background(), "auth.test", nil, &a); err != nil || a.Team != "Acme" {
 		t.Fatalf("auth.test: %+v %v", a, err)
 	}
-	if s.Me() != "UME" || s.Workspace() != "" {
+	if s.Me() != "you" || s.Workspace() != "" { // no handle known yet
 		t.Fatalf("Me %q Workspace %q", s.Me(), s.Workspace())
 	}
 }
@@ -480,7 +480,7 @@ func TestNativeSectionsOrderFollowsTheLinks(t *testing.T) {
 	if out[0].ID != "C" || out[0].Section != "Top" || out[1].ID != "A" || out[2].ID != "B" || out[2].Section != "" {
 		t.Fatalf("%+v", out)
 	}
-	if got := moveSelfDMEnd([]Conversation{{ID: "1", Kind: DM, Name: "you"}, {ID: "2"}}); got[1].Name != "you" {
+	if got := moveSelfDMEnd([]Conversation{{ID: "1", Kind: DM, Name: "oscar", Self: true}, {ID: "2"}}); got[1].Name != "oscar" {
 		t.Fatalf("self DM not last: %+v", got)
 	}
 }
@@ -538,5 +538,39 @@ func TestUploadInThreeSteps(t *testing.T) {
 	}
 	if completed.Get("channel_id") != "C1" || completed.Get("thread_ts") != "5.0" || completed.Get("initial_comment") != "look" || !strings.Contains(completed.Get("files"), `"id":"F1"`) {
 		t.Fatalf("complete: %v", completed)
+	}
+}
+
+func TestGroupDMsAndYourHandle(t *testing.T) {
+	s, _ := apiServer(t, map[string]handler{
+		"users.conversations": func(url.Values) any {
+			return ok(obj{"channels": []obj{
+				{"id": "G1", "name": "mpdm-ana--oscar--bob.smith-1", "is_mpim": true, "is_private": true},
+				{"id": "C1", "name": "mpdm-like-a-name"},
+				{"id": "DME", "is_im": true, "user": "UME"},
+			}})
+		},
+		"users.info": users,
+	})
+	s.meName = "oscar"
+	got, err := s.Conversations(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]Conversation{}
+	for _, c := range got {
+		by[c.ID] = c
+	}
+	if g := by["G1"]; g.Name != "ana, bob.smith" || g.Kind != DM || g.Group != 2 || g.Private {
+		t.Fatalf("group DM: %+v", g)
+	}
+	if c := by["C1"]; c.Name != "mpdm-like-a-name" || c.Group != 0 {
+		t.Fatalf("not a group DM: %+v", c)
+	}
+	if me := by["DME"]; !me.Self || me.Name != "oscar" || got[len(got)-1].ID != "DME" {
+		t.Fatalf("your own DM: %+v (last %s)", me, got[len(got)-1].ID)
+	}
+	if s.Me() != "oscar" || s.user("UME") != "oscar" {
+		t.Fatalf("your messages are signed %q", s.user("UME"))
 	}
 }

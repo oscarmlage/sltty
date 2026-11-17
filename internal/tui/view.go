@@ -159,6 +159,8 @@ func (m *model) pane(content []string, w int, focused bool, bg string) []string 
 
 func convLabel(c chat.Conversation) string {
 	switch {
+	case c.Group > 0:
+		return c.Name // "ana, bob, carol"
 	case c.Kind == chat.DM:
 		return "@" + c.Name
 	case c.Private:

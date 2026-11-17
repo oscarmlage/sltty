@@ -178,7 +178,8 @@ func (m *model) unreadSections(in []section) []section {
 	open := m.openConv()
 	out := make([]section, 0, len(in))
 	for _, s := range in {
-		s.convs = slices.DeleteFunc(s.convs, func(i int) bool { return m.convs[i].Unread == 0 && i != open })
+		// The chat with yourself (Saved Messages) is always there too.
+		s.convs = slices.DeleteFunc(s.convs, func(i int) bool { return m.convs[i].Unread == 0 && i != open && !m.convs[i].Self })
 		if len(s.convs) > 0 {
 			out = append(out, s)
 		}
@@ -473,6 +474,10 @@ var privateIcon = "🔒"
 
 func convIcon(c chat.Conversation) string {
 	switch {
+	case c.Group > 0 && c.Group < 10: // a group DM: how many, as Slack shows it
+		return sbMuted.Render(fmt.Sprint(c.Group)) + " "
+	case c.Group > 0:
+		return sbMuted.Render("+") + " "
 	case c.Kind == chat.DM && c.Online:
 		return sbOnline.Render("●") + " "
 	case c.Kind == chat.DM:

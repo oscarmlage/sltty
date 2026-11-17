@@ -65,7 +65,7 @@ func TestUnreadOnlySidebarKeepsSwitcherComplete(t *testing.T) {
 		t.Fatal("U did not enable unread-only sidebar")
 	}
 	for _, it := range m.sideOrder() {
-		if it.kind == sideConv && m.convs[it.conv].Unread == 0 && it.conv != m.openConv() {
+		if c := m.convs[it.conv]; it.kind == sideConv && c.Unread == 0 && it.conv != m.openConv() && !c.Self {
 			t.Fatalf("read chat %q in unread-only sidebar", m.convs[it.conv].Name)
 		}
 	}
@@ -542,5 +542,27 @@ func TestUnreadVIPsGoFirst(t *testing.T) {
 	m.opts.Sections = []Section{{Name: "Team", Channels: []string{"@bob", "tools-*"}}}
 	if s := first(); s.name != vipSection || m.convs[s.convs[0]].Name != "bob" {
 		t.Fatalf("custom sections: first %q %v", s.name, s.convs)
+	}
+}
+
+func TestSelfChatAndGroupDMs(t *testing.T) {
+	m := newTest(t)
+	m.convs = append(m.convs, chat.Conversation{ID: "G1", Name: "ana, bob", Kind: chat.DM, Group: 2, Unread: 1})
+	press(m, "U") // unread only: the chat with yourself stays
+	listed := map[string]bool{}
+	for _, it := range m.sideOrder() {
+		if it.kind == sideConv {
+			listed[m.convs[it.conv].ID] = true
+		}
+	}
+	if !listed["D4"] || !listed["G1"] {
+		t.Fatalf("unread only: self %v, group %v", listed["D4"], listed["G1"])
+	}
+	s := screen(m)
+	if !strings.Contains(s, "2 ana, bob") || strings.Contains(s, "@ana, bob") {
+		t.Fatalf("a group DM shows how many and who:\n%s", s)
+	}
+	if got := convLabel(chat.Conversation{Name: "ana, bob", Kind: chat.DM, Group: 2}); got != "ana, bob" {
+		t.Fatalf("label %q", got)
 	}
 }

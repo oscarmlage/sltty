@@ -5,6 +5,7 @@ package chat
 // not document xoxc browser tokens as a public API.
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,6 +30,7 @@ type Credentials struct {
 type Slack struct {
 	creds         Credentials
 	me, workspace string
+	meName        string // the user's handle: how their messages are signed
 	hc            *http.Client
 	apiBase       string
 	mu            sync.Mutex
@@ -47,6 +49,7 @@ func NewSlack(ctx context.Context, creds Credentials) (*Slack, error) {
 	var a struct {
 		OK     bool   `json:"ok"`
 		UserID string `json:"user_id"`
+		User   string `json:"user"`
 		TeamID string `json:"team_id"`
 		Team   string `json:"team"`
 		URL    string `json:"url"`
@@ -58,7 +61,7 @@ func NewSlack(ctx context.Context, creds Credentials) (*Slack, error) {
 	if !a.OK {
 		return nil, fmt.Errorf("Slack authentication failed: %s", a.Error)
 	}
-	s.me, s.workspace = a.UserID, a.Team
+	s.me, s.meName, s.workspace = a.UserID, a.User, a.Team
 	s.creds.TeamID, s.creds.TeamName = a.TeamID, a.Team
 	// Enterprise Grid workspaces can reject requests sent to slack.com/api;
 	// auth.test provides their authoritative API host.
@@ -94,7 +97,8 @@ func defaultHTTPClient() *http.Client {
 	}}
 }
 
-func (s *Slack) Me() string        { return s.me }
+// Me is the user's name as their messages show it (their Slack handle).
+func (s *Slack) Me() string        { return cmp.Or(s.meName, "you") }
 func (s *Slack) Workspace() string { return s.workspace }
 
 func (s *Slack) call(ctx context.Context, method string, form url.Values, out any) error {
