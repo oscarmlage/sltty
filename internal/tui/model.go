@@ -729,6 +729,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err.Error()
 			return m, nil
 		}
+		if msg.msg.TS == "" { // the service did not say which: read it again
+			cmd := m.loadHistory(msg.id)
+			if t := m.thread; t != nil && t.convID == msg.id {
+				cmd = tea.Batch(cmd, m.loadReplies(t.convID, t.root))
+			}
+			return m, cmd
+		}
 		m.replaceMsg(msg.id, msg.msg)
 		return m, nil
 	case searchTick:

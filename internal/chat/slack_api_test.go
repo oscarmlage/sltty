@@ -253,7 +253,9 @@ func TestMessagesRepliesSendEditSearchMark(t *testing.T) {
 			return ok(obj{"message": obj{"ts": "3.0", "user": "UME", "text": f.Get("text")}})
 		},
 		"chat.update": func(f url.Values) any {
-			return ok(obj{"message": obj{"ts": f.Get("ts"), "user": "UME", "text": f.Get("text"), "edited": obj{"ts": "9.0"}}})
+			// As Slack answers: the ts beside the message, not in it.
+			return ok(obj{"channel": f.Get("channel"), "ts": f.Get("ts"), "text": f.Get("text"),
+				"message": obj{"user": "UME", "text": f.Get("text"), "edited": obj{"ts": "9.0"}}})
 		},
 		"search.messages": func(f url.Values) any {
 			return ok(obj{"messages": obj{"matches": []obj{{"channel": obj{"id": "C1"}, "ts": "2.0", "thread_ts": "1.0", "user": "U2", "text": "a runner"}}}})
@@ -273,7 +275,7 @@ func TestMessagesRepliesSendEditSearchMark(t *testing.T) {
 		t.Fatalf("a top-level message carried thread_ts %q (%v)", sent.Get("thread_ts"), err)
 	}
 	e, err := s.Edit(ctx, "C1", "3.0", "fixed")
-	if err != nil || e.Text != "fixed" || !e.Edited {
+	if err != nil || e.Text != "fixed" || !e.Edited || e.TS != "3.0" {
 		t.Fatalf("edit: %+v %v", e, err)
 	}
 	hits, err := s.Search(ctx, "runner in:#general")

@@ -265,7 +265,11 @@ func (s *Slack) Edit(ctx context.Context, id, ts, text string) (Message, error) 
 		Message slackMessage `json:"message"`
 	}
 	err := s.call(ctx, "chat.update", url.Values{"channel": {id}, "ts": {ts}, "text": {text}}, &r)
-	return s.message(r.Message), err
+	m := s.message(r.Message)
+	// The answer's message has no ts (it is beside it): without one the
+	// edit would match no message on screen.
+	m.TS = cmp.Or(m.TS, ts)
+	return m, err
 }
 func (s *Slack) React(ctx context.Context, id, ts, emoji string) (Message, error) {
 	// reactions.get is canonical and lets this action truly toggle.

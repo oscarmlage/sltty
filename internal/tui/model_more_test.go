@@ -1,12 +1,14 @@
 package tui
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/oscarmlage/sltty/internal/chat"
 )
@@ -144,5 +146,31 @@ func TestTargetOutOfRangeAndNoConversation(t *testing.T) {
 	empty := newModel(chat.NewFake(), defaultKeymap(), Options{})
 	if empty.selected() != -1 || empty.selectedMsg() != nil || empty.target() != nil {
 		t.Fatal("no conversation, no target")
+	}
+}
+
+// slackEdits stands in for a service whose edits come back without the
+// message's ts: the conversation is read again.
+type slackEdits struct{ *chat.Fake }
+
+func (s slackEdits) Edit(ctx context.Context, id, ts, text string) (chat.Message, error) {
+	m, err := s.Fake.Edit(ctx, id, ts, text)
+	m.TS = ""
+	return m, err
+}
+
+func TestAnEditWithoutTSReloads(t *testing.T) {
+	m := newModel(slackEdits{chat.NewFake()}, defaultKeymap(), Options{})
+	run(m, tea.WindowSizeMsg{Width: 120, Height: 32})
+	run(m, m.Init()())
+	m.goTo(t, "general")
+	press(m, "i")
+	typeText(m, "typo")
+	press(m, "enter", "esc", "e")
+	m.chatIn.SetValue("fixed")
+	press(m, "enter")
+	h := m.history["C1"]
+	if got := h[len(h)-1].Text; got != "fixed" {
+		t.Fatalf("on screen after the edit: %q", got)
 	}
 }
