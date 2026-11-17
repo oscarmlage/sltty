@@ -449,6 +449,8 @@ func (m *model) activityEntry(a chat.Activity, now time.Time) []string {
 		what = "thread reply"
 	case chat.ActReaction:
 		what = "reaction"
+	case chat.ActDM:
+		what = "direct message"
 	}
 	head := statusWhere.Render(m.whereLabel(a.ConvID)) + dimStyle.Render(" · "+what+" · "+clock(a.At, now))
 	if m.activityIsUnread(a) {

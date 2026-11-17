@@ -53,6 +53,7 @@ const (
 	ActMention  ActivityKind = iota // someone wrote @you
 	ActReply                        // a reply in a thread the user takes part in
 	ActReaction                     // someone reacted to the user's message
+	ActDM                           // a direct message (a person's, or an app's)
 )
 
 // Activity is one entry of the Activity view.

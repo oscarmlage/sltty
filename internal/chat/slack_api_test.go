@@ -379,6 +379,8 @@ func TestActivityFeed(t *testing.T) {
 				{"key": "k1", "feed_ts": "100.0", "is_unread": true, "item": obj{"type": "at_user", "message": obj{"ts": "1.0", "channel": "C1", "user": "U1", "text": "hi @you"}}},
 				{"key": "k2", "feed_ts": "200.0", "item": obj{"type": "thread_v2", "bundle_info": obj{"payload": obj{"thread_entry": obj{"channel_id": "C2", "latest_ts": "7.0", "thread_ts": "6.0"}}}}},
 				{"key": "k3", "feed_ts": "300.0", "item": obj{"type": "message_reaction", "message": obj{"ts": "2.0", "channel": "C1", "user": "UME", "text": "mine"}, "reaction": obj{"user": "U3", "name": "tada"}}},
+				{"key": "k6", "feed_ts": "400.0", "is_unread": true, "item": obj{"type": "dm", "bundle_info": obj{"payload": obj{"dm_entry": obj{"latest_message": obj{"channel": "D1", "ts": "3.0"}}}}}},
+				{"key": "k7", "feed_ts": "500.0", "item": obj{"type": "bot_dm_bundle", "bundle_info": obj{"payload": obj{"message": obj{"channel": "D2", "ts": "4.0"}}, "unread_count": 2}}},
 				{"key": "k4", "item": obj{"type": "something_new"}},
 				{"key": "k5", "item": obj{"type": "at_user", "message": obj{"text": "no channel"}}},
 			}})
@@ -391,8 +393,15 @@ func TestActivityFeed(t *testing.T) {
 		},
 	})
 	got, err := s.Activity(context.Background())
-	if err != nil || len(got) != 3 {
+	if err != nil || len(got) != 5 {
 		t.Fatalf("activity: %+v %v", got, err)
+	}
+	// DMs come in bundle_info, not in item.message.
+	if a := got[3]; a.Kind != ActDM || a.ConvID != "D1" || a.Msg.Text != "hydrated 3.0" || !a.Unread || a.By != "u1" {
+		t.Fatalf("dm: %+v", a)
+	}
+	if a := got[4]; a.Kind != ActDM || a.ConvID != "D2" || a.Msg.Text != "hydrated 4.0" {
+		t.Fatalf("app dm: %+v", a)
 	}
 	if a := got[0]; a.Kind != ActMention || a.Msg.Text != "hydrated 1.0" || !a.Unread || a.By != "u1" || a.At.Unix() != 100 {
 		t.Fatalf("mention: %+v", a)

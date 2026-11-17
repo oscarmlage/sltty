@@ -75,7 +75,13 @@ func (s *Slack) Activity(ctx context.Context) ([]Activity, error) {
 				} `json:"reaction"`
 				Bundle struct {
 					Payload struct {
-						Thread struct {
+						// A DM: the newest message of the conversation.
+						DM struct {
+							Latest slackMessage `json:"latest_message"`
+						} `json:"dm_entry"`
+						// An app's DMs (bot_dm_bundle).
+						Message slackMessage `json:"message"`
+						Thread  struct {
 							Channel string `json:"channel_id"`
 							Latest  string `json:"latest_ts"`
 							Root    string `json:"thread_ts"`
@@ -101,13 +107,25 @@ func (s *Slack) Activity(ctx context.Context) ([]Activity, error) {
 			kind = ActReply
 		case "message_reaction":
 			kind = ActReaction
-		case "at_user", "at_user_group", "at_channel", "at_everyone", "keyword", "dm", "bot_dm_bundle", "channel":
+		case "dm", "bot_dm_bundle":
+			kind = ActDM
+		case "at_user", "at_user_group", "at_channel", "at_everyone", "keyword", "channel":
 		default:
 			continue
 		}
 		m, conv, root := x.Item.Message, x.Item.Message.Channel, x.Item.Message.ThreadTS
-		if x.Item.Type == "thread_v2" {
-			conv, root, m.TS = x.Item.Bundle.Payload.Thread.Channel, x.Item.Bundle.Payload.Thread.Root, x.Item.Bundle.Payload.Thread.Latest
+		// Bundles carry their message in bundle_info, not in item.message.
+		switch p := x.Item.Bundle.Payload; x.Item.Type {
+		case "thread_v2":
+			conv, root, m.TS = p.Thread.Channel, p.Thread.Root, p.Thread.Latest
+		case "dm":
+			m = p.DM.Latest
+			conv, root = m.Channel, m.ThreadTS
+		case "bot_dm_bundle":
+			if m.Channel == "" {
+				m = p.Message
+			}
+			conv, root = m.Channel, m.ThreadTS
 		}
 		if conv == "" || m.TS == "" {
 			continue
