@@ -35,6 +35,8 @@ type Conversation struct {
 	Pinned bool
 	// Folded: its section starts folded (Telegram's Archived).
 	Folded bool
+	// VIP: a direct message with one of the user's VIPs (Slack).
+	VIP bool
 }
 
 // ThreadSummary is a thread the user takes part in, for the Threads view.

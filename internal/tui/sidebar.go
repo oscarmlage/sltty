@@ -101,7 +101,7 @@ func (m *model) sections() []section {
 			}
 			out[at].convs = append(out[at].convs, i)
 		}
-		return m.unreadSections(out)
+		return m.unreadSections(m.withVIPs(out))
 	}
 	custom := m.customSections()
 	out := make([]section, 0, len(custom)+2)
@@ -132,7 +132,39 @@ func (m *model) sections() []section {
 			return cmp.Compare(matchIndex(s.Channels, m.convs[a]), matchIndex(s.Channels, m.convs[b]))
 		})
 	}
-	return m.unreadSections(append(out, channels, dms))
+	return m.unreadSections(m.withVIPs(append(out, channels, dms)))
+}
+
+// vipSection holds, above everything, the DMs with the user's VIPs that
+// have unread messages (Slack's VIPs).
+const vipSection = "VIP"
+
+// vipNow is whether conversation i sits in the VIP section: a VIP's DM
+// with unread messages, or the one the user went into from there, until
+// they leave it (reading it must not move it from under the cursor).
+func (m *model) vipNow(i int) bool {
+	c := m.convs[i]
+	return c.VIP && (c.Unread > 0 && !c.Muted || c.ID == m.vipKeep)
+}
+
+// withVIPs moves the VIP conversations with unread messages to a section
+// of their own, first.
+func (m *model) withVIPs(in []section) []section {
+	vip := section{name: vipSection, emoji: "star"}
+	for si := range in {
+		in[si].convs = slices.DeleteFunc(in[si].convs, func(i int) bool {
+			if m.vipNow(i) {
+				vip.convs = append(vip.convs, i)
+				return true
+			}
+			return false
+		})
+	}
+	if len(vip.convs) == 0 {
+		return in
+	}
+	slices.Sort(vip.convs) // the backend's order, whatever section each came from
+	return append([]section{vip}, in...)
 }
 
 // unreadSections removes read conversations from the sidebar view only.

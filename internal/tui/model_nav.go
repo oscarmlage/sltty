@@ -124,6 +124,11 @@ func (m *model) selectConv(i int) tea.Cmd {
 	}
 	m.cursor, m.chatOff = i, 0
 	c := m.current()
+	if m.vipNow(i) {
+		m.vipKeep = c.ID // read in there, it stays until left
+	} else {
+		m.vipKeep = ""
+	}
 	settle := m.settle(c.ID)
 	m.chatIn.SetValue(m.drafts[c.ID])
 	m.chatIn.Placeholder = "Message " + convLabel(*c)

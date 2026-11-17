@@ -12,6 +12,7 @@ import (
 )
 
 func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
+	vips := s.vipUsers(ctx)
 	var all []Conversation
 	cursor := ""
 	for {
@@ -37,7 +38,7 @@ func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
 		}
 		if err := s.call(ctx, "users.conversations", f, &r); err != nil {
 			if strings.Contains(err.Error(), "enterprise_is_restricted") {
-				return s.userBoot(ctx)
+				return s.userBoot(ctx, vips)
 			}
 			return nil, err
 		}
@@ -49,7 +50,7 @@ func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
 				s.resolveUser(ctx, c.User)
 				name = s.user(c.User)
 			}
-			all = append(all, Conversation{ID: c.ID, Name: name, Kind: kind, Topic: c.Topic.Value, Unread: c.UnreadCountDisplay, Private: c.IsPrivate})
+			all = append(all, Conversation{ID: c.ID, Name: name, Kind: kind, Topic: c.Topic.Value, Unread: c.UnreadCountDisplay, Private: c.IsPrivate, VIP: kind == DM && vips[c.User]})
 		}
 		cursor = r.ResponseMetadata.NextCursor
 		if cursor == "" {
@@ -76,7 +77,7 @@ func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
 
 // userBoot is the browser client's initial sidebar snapshot. Enterprise Grid
 // may intentionally disable users.conversations even for its own web tokens.
-func (s *Slack) userBoot(ctx context.Context) ([]Conversation, error) {
+func (s *Slack) userBoot(ctx context.Context, vips map[string]bool) ([]Conversation, error) {
 	var r struct {
 		Channels []struct {
 			ID        string `json:"id"`
@@ -106,7 +107,7 @@ func (s *Slack) userBoot(ctx context.Context) ([]Conversation, error) {
 			continue
 		}
 		s.resolveUser(ctx, im.User)
-		out = append(out, Conversation{ID: im.ID, Name: s.user(im.User), Kind: DM})
+		out = append(out, Conversation{ID: im.ID, Name: s.user(im.User), Kind: DM, VIP: vips[im.User]})
 	}
 	// Both calls are best-effort: a Grid can restrict either, but userBoot
 	// still gives us a usable flat sidebar in that case.
@@ -334,4 +335,25 @@ func (s *Slack) unreadCounts(ctx context.Context) (map[string]int, error) {
 		add(x.ID, x.Has, 0, x.Mentions)
 	}
 	return out, nil
+}
+
+// vipUsers is who the user marked VIP in Slack (the vip_users preference,
+// IDs separated by commas). Best effort: without it nobody is.
+func (s *Slack) vipUsers(ctx context.Context) map[string]bool {
+	var r struct {
+		Prefs struct {
+			VIPs string `json:"vip_users"`
+		} `json:"prefs"`
+	}
+	if err := s.call(ctx, "users.prefs.get", nil, &r); err != nil {
+		diag.Printf("Slack VIPs unavailable: %v", err)
+		return nil
+	}
+	out := map[string]bool{}
+	for _, id := range strings.Split(r.Prefs.VIPs, ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			out[id] = true
+		}
+	}
+	return out
 }

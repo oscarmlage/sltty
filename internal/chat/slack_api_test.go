@@ -161,6 +161,7 @@ func TestConversations(t *testing.T) {
 			return ok(obj{"channels": []obj{{"id": "C1", "unread_count_display": 5}, {"id": "C2", "has_unreads": true}},
 				"ims": []obj{{"id": "D1", "mention_count": 3}}})
 		},
+		"users.prefs.get": func(url.Values) any { return ok(obj{"prefs": obj{"vip_users": "UBOB, UANA"}}) },
 	})
 	got, err := s.Conversations(context.Background())
 	if err != nil {
@@ -184,6 +185,9 @@ func TestConversations(t *testing.T) {
 	}
 	if by["C1"].Unread != 5 || by["C2"].Unread != 1 || by["D1"].Unread != 3 || !by["C2"].Private || by["C1"].Topic != "all hands" || by["D1"].Kind != DM {
 		t.Fatalf("details: %+v", by)
+	}
+	if !by["D1"].VIP || by["C1"].VIP || by["DME"].VIP {
+		t.Fatalf("VIPs: only the DM with a VIP is one: %+v", by)
 	}
 	if by["C1"].SectionEmoji != "zzz" || calls("conversations.open") != 1 {
 		t.Fatalf("emoji %q, opens %d", by["C1"].SectionEmoji, calls("conversations.open"))

@@ -512,3 +512,35 @@ func TestLoadingModalUntilTheConversationsCome(t *testing.T) {
 		t.Fatal("still busy after loading")
 	}
 }
+
+func TestUnreadVIPsGoFirst(t *testing.T) {
+	m := newTest(t)
+	for i := range m.convs {
+		if m.convs[i].Name == "ana" || m.convs[i].Name == "bob" {
+			m.convs[i].VIP = true // ana has an unread message, bob none
+		}
+	}
+	first := func() section { return m.sections()[0] }
+	if s := first(); s.name != vipSection || len(s.convs) != 1 || m.convs[s.convs[0]].Name != "ana" {
+		t.Fatalf("first section: %q %v", s.name, s.convs)
+	}
+	if s := screen(m); strings.Index(s, "VIP") > strings.Index(s, "Channels") {
+		t.Fatalf("VIP is not above the rest:\n%s", s)
+	}
+	// Read inside, it stays until left; then it goes back to its section.
+	m.goTo(t, "ana")
+	press(m, "l")
+	if c := m.current(); c.Name != "ana" || c.Unread != 0 || first().name != vipSection {
+		t.Fatalf("read inside: %q unread %d, first %q", c.Name, c.Unread, first().name)
+	}
+	press(m, "h", "j", "j") // the next section's header, then its first chat
+	if m.current().Name == "ana" || first().name == vipSection {
+		t.Fatalf("left: on %q, first %q", m.current().Name, first().name)
+	}
+	// With the config's own sections too.
+	m.setUnread(m.convs[slices.IndexFunc(m.convs, func(c chat.Conversation) bool { return c.Name == "bob" })].ID, 2)
+	m.opts.Sections = []Section{{Name: "Team", Channels: []string{"@bob", "tools-*"}}}
+	if s := first(); s.name != vipSection || m.convs[s.convs[0]].Name != "bob" {
+		t.Fatalf("custom sections: first %q %v", s.name, s.convs)
+	}
+}
