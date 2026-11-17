@@ -103,7 +103,7 @@ var defaults = []binding{
 	{actNextMatch, scNormal, "Move around", "next search result (older)", []string{"n"}},
 	{actPrevMatch, scNormal, "Move around", "previous search result", []string{"N"}},
 	{actFold, scNormal, "Move around", "fold / unfold the sidebar section", []string{"space", "z a"}},
-	{actNextTab, scNormal, "Move around", "next account tab (alt+1…9 picks one)", []string{"g t"}},
+	{actNextTab, scNormal, "Move around", "next account tab (1…9, or alt+1…9 anywhere, picks one)", []string{"g t"}},
 	{actPrevTab, scNormal, "Move around", "previous account tab", []string{"g T"}},
 
 	{actOpen, scNormal, "Messages", "open the chat / the thread", []string{"enter", "t"}},

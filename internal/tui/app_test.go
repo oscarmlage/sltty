@@ -114,6 +114,20 @@ func TestSwitchingTabs(t *testing.T) {
 	if a.active != 1 {
 		t.Fatal("a tab that does not exist was opened")
 	}
+	drive(a, tea.KeyPressMsg{Code: '1', Text: "1"})
+	if a.active != 0 {
+		t.Fatal("1 did not open the first account")
+	}
+	drive(a, tea.KeyPressMsg{Code: 'i', Text: "i"}) // INSERT: 2 is text
+	drive(a, tea.KeyPressMsg{Code: '2', Text: "2"})
+	if a.active != 0 || !strings.Contains(a.tabs[0].chatIn.Value(), "2") {
+		t.Fatal("2 while writing switched tabs instead of typing")
+	}
+	drive(a, tea.KeyPressMsg{Code: tea.KeyEscape})
+	drive(a, tea.KeyPressMsg{Code: '2', Text: "2"})
+	if a.active != 1 {
+		t.Fatal("2 in NORMAL did not open the second account")
+	}
 	// A click on the bar.
 	span := a.tabSpans()[0]
 	drive(a, tea.MouseClickMsg{X: span[0] + 1, Y: 0, Button: tea.MouseLeft})

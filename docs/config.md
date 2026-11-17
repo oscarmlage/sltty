@@ -32,7 +32,7 @@ is no tab bar.
 
 The tab bar on top shows each account and its unread count (muted chats
 aside): the active tab filled with its theme's main color, the others in
-their own sidebar color. `alt+1`…`alt+9` open a tab from any mode, `g t` / `g T` go to the
+their own sidebar color. `1`…`9` open a tab (`alt+1`…`alt+9` also while writing), `g t` / `g T` go to the
 next / previous one, and a click on a tab opens it. Accounts in the
 background keep working: Telegram's live updates and every unread count
 stay current.

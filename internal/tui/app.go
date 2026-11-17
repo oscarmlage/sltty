@@ -142,13 +142,28 @@ func (a *app) broadcast(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-// tabKey is alt+1…9: that tab, from any mode (no text is typed with alt).
+// tabKey is 1…9 in NORMAL mode with nothing open over the panes (a list,
+// a sheet, the command line take their own keys), and alt+1…9 from any
+// mode: that tab.
 func (a *app) tabKey(k tea.KeyPressMsg) (tabMsg, bool) {
-	s := k.String()
-	if len(a.tabs) < 2 || !strings.HasPrefix(s, "alt+") || len(s) != 5 || s[4] < '1' || s[4] > '9' {
+	if len(a.tabs) < 2 {
 		return tabMsg{}, false
 	}
-	return tabMsg{index: int(s[4] - '0')}, true
+	s := k.String()
+	switch {
+	case len(s) == 1 && s[0] >= '1' && s[0] <= '9' && a.cur().idle():
+		return tabMsg{index: int(s[0] - '0')}, true
+	case len(s) == 5 && strings.HasPrefix(s, "alt+") && s[4] >= '1' && s[4] <= '9':
+		return tabMsg{index: int(s[4] - '0')}, true
+	}
+	return tabMsg{}, false
+}
+
+// idle is NORMAL mode with only the panes on screen and no key sequence
+// half typed: plain keys are commands.
+func (m *model) idle() bool {
+	return m.mode == normal && m.picker == nil && m.cmdline == nil && !m.help && m.settings == nil &&
+		m.viewer == nil && !m.quitting && m.pending == ""
 }
 
 // switchTab moves to another account, carrying the visual settings over:
