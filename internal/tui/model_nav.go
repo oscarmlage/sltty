@@ -5,6 +5,7 @@ package tui
 import (
 	"cmp"
 	"slices"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -115,15 +116,16 @@ func (m *model) selectConv(i int) tea.Cmd {
 	}
 	m.cursor, m.chatOff = i, 0
 	c := m.current()
+	settle := m.settle(c.ID)
 	m.chatIn.SetValue(m.drafts[c.ID])
 	m.chatIn.Placeholder = "Message " + convLabel(*c)
 	if _, ok := m.history[c.ID]; ok {
 		if c.Unread > 0 {
 			m.noteNew(c.ID, c.Unread)
 		}
-		return nil
+		return settle
 	}
-	return m.loadCachedHistory(c.ID)
+	return tea.Batch(settle, m.loadCachedHistory(c.ID))
 }
 
 // openThread opens the thread of the selected message (an empty one starts
@@ -249,4 +251,19 @@ func (m *model) setThreadW(w int) {
 		w = min(w, m.width-m.side-2-minMain)
 	}
 	m.threadW = max(minThread, w)
+}
+
+// settledMsg says the sidebar cursor rested on a conversation.
+type settledMsg struct{ id string }
+
+// settle marks id settled after SettleDelay, if the cursor is still there.
+func (m *model) settle(id string) tea.Cmd {
+	if m.settled == id {
+		return nil
+	}
+	if m.opts.SettleDelay == 0 {
+		m.settled = id
+		return nil
+	}
+	return tea.Tick(m.opts.SettleDelay, func(time.Time) tea.Msg { return settledMsg{id} })
 }

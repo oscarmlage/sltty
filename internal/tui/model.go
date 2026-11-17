@@ -133,6 +133,10 @@ type Options struct {
 	SidebarWidth   int // columns; 0 for the default
 	// HistoryCacheTTL is the on-disk history cache lifetime; 0 disables it.
 	HistoryCacheTTL time.Duration
+	// SettleDelay is how long the sidebar cursor must rest on a conversation
+	// before its history is asked for again and its pictures fetched: j/k
+	// over a dozen chats asks for none of them. 0 for at once.
+	SettleDelay time.Duration
 	// PollInterval is how often a backend without live updates (Slack) is
 	// asked for new messages: 0 for the default, negative for never.
 	PollInterval time.Duration
@@ -153,6 +157,10 @@ type model struct {
 	// history (a live, rate-limited backend): skimming with j/k asks for
 	// none of the chats passed by.
 	loadDelay time.Duration
+	// settled is the conversation the sidebar cursor has rested on (after
+	// SettleDelay): its pictures are fetched, not those of every
+	// conversation skimmed past.
+	settled string
 	// noThreads hides the Threads view (a chat.Threadless backend).
 	noThreads bool
 	// typing is who is typing where: conversation → name → until when.
@@ -384,10 +392,11 @@ type loadSoonMsg struct{ id string }
 // loadHistorySoon waits for the sidebar cursor to rest (a live,
 // rate-limited backend) before asking for a history.
 func (m *model) loadHistorySoon(id string) tea.Cmd {
-	if m.loadDelay == 0 {
+	d := max(m.loadDelay, m.opts.SettleDelay)
+	if d == 0 {
 		return m.loadHistory(id)
 	}
-	return tea.Tick(m.loadDelay, func(time.Time) tea.Msg { return loadSoonMsg{id} })
+	return tea.Tick(d, func(time.Time) tea.Msg { return loadSoonMsg{id} })
 }
 
 func (m *model) loadCachedHistory(id string) tea.Cmd {
@@ -468,7 +477,7 @@ func (m *model) target() *chat.Message {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.noteConnection(msg)
-	before, beforeView := m.spot(), m.view
+	before := m.spot()
 	typed := m.typedBefore(msg)
 	_, cmd := m.update(msg)
 	if t := typed(); t != nil {
@@ -479,13 +488,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if more := m.imageCmds(); more != nil {
 		cmd = tea.Batch(cmd, more)
-	}
-	if after := m.spot(); after.conv != before.conv || m.view != beforeView {
-		// The renderer only rewrites cells it believes changed. If the terminal
-		// ever disagrees with it (a glyph drawn at another width), stale cells
-		// survive and leak colours or rows across panes. Switching what the
-		// main pane shows nearly replaces the screen anyway: repaint it whole.
-		cmd = tea.Batch(cmd, tea.ClearScreen)
 	}
 	return m, cmd
 }
@@ -587,6 +589,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.gotCounts(msg)
 	case convsRefreshMsg:
 		m.gotConvsRefresh(msg)
+		return m, nil
+	case settledMsg:
+		if c := m.current(); c != nil && c.ID == msg.id {
+			m.settled = msg.id // Update fetches its pictures now
+		}
 		return m, nil
 	case loadSoonMsg:
 		if c := m.current(); c != nil && c.ID == msg.id {

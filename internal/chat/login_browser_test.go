@@ -24,7 +24,18 @@ func TestMain(m *testing.M) {
 		fakeChrome(mode)
 		return
 	}
-	os.Exit(m.Run())
+	// The tests stay out of the user's directories: the people cache,
+	// sessions and the Telegram migration all live under HOME.
+	dir, err := os.MkdirTemp("", "sltty-chat-test")
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("HOME", dir)
+	os.Setenv("XDG_CACHE_HOME", dir+"/cache")
+	os.Setenv("XDG_CONFIG_HOME", dir+"/config")
+	code := m.Run()
+	os.RemoveAll(dir)
+	os.Exit(code)
 }
 
 func fakeChrome(mode string) {

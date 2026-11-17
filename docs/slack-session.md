@@ -56,6 +56,13 @@ There is no socket connection: every 20 seconds (`poll_seconds`) sltty asks
 `conversations.replies` for the open conversation and thread when they have
 new messages. Threads and Activity are refreshed every minute.
 
+Moving through the sidebar asks for nothing until the cursor rests on a
+conversation (200 ms): only then is its history refreshed and are the
+pictures of the messages on screen (and a few around) fetched. The names
+and avatar addresses of the people seen are kept a week in
+`sltty/people-*.json` in the user cache directory (owner-only), so a new
+session does not look them all up again.
+
 ## Where the session lives
 
 `slack-session.json` in the platform config directory (on macOS

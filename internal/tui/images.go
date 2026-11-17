@@ -137,8 +137,8 @@ func (m *model) imageCmds() tea.Cmd {
 			}
 		}
 	}
-	if c := m.current(); c != nil && m.view == sideConv {
-		scan(m.history[c.ID], true)
+	if c := m.current(); c != nil && m.view == sideConv && m.settled == c.ID {
+		scan(m.onScreen(c.ID), true)
 	}
 	if m.thread != nil {
 		scan(m.thread.msgs, true)
@@ -171,6 +171,29 @@ func (m *model) imageCmds() tea.Cmd {
 		}
 	}
 	return tea.Batch(cmds...)
+}
+
+// picMargin is how many messages beyond those on screen get their pictures
+// ahead of scrolling to them.
+const picMargin = 12
+
+// onScreen is the part of a conversation's history that is on screen (as
+// the last frame drew it), with a margin: only those messages' pictures
+// are fetched. Opening a conversation shows its newest messages.
+func (m *model) onScreen(id string) []chat.Message {
+	h := m.history[id]
+	lo, hi := len(h), -1
+	if m.layout.chatConv == id {
+		for _, i := range m.layout.chatMsg {
+			if i >= 0 && i < len(h) {
+				lo, hi = min(lo, i), max(hi, i)
+			}
+		}
+	}
+	if hi < 0 { // not drawn yet: the bottom
+		lo, hi = max(0, len(h)-m.height/2), len(h)-1
+	}
+	return h[max(0, lo-picMargin):min(len(h), hi+picMargin+1)]
 }
 
 // loadCustomEmoji fetches the names of the workspace's emoji, once: for

@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/oscarmlage/sltty/internal/chat"
+	"github.com/oscarmlage/sltty/internal/diag"
 )
 
 // Screen: the panes on rows 0..height-2, a vim-like status line on the last
@@ -25,6 +26,7 @@ const paneTop = 2 // header and rule above the messages
 type layout struct {
 	top         int
 	side        []int    // conversation index per content row, -1 for none
+	chatConv    string   // the conversation chatMsg is about
 	chatMsg     []int    // message index per content row of the conversation, -1
 	threadMsg   []int    // the same for the thread
 	chatText    []string // rendered chat rows, for drag-to-copy
@@ -62,7 +64,12 @@ func (m *model) mainX() int   { return m.side + 1 }
 func (m *model) threadX() int { return m.width - m.threadWidth() }
 
 func (m *model) View() tea.View {
-	v := tea.NewView(m.render())
+	start := time.Now()
+	content := m.render()
+	if d := time.Since(start); d > 20*time.Millisecond {
+		diag.Printf("tui: slow frame %s", d.Round(time.Millisecond))
+	}
+	v := tea.NewView(content)
 	v.AltScreen = true
 	v.MouseMode = tea.MouseModeCellMotion // motion while a button is held: divider drag
 	return v
@@ -202,6 +209,7 @@ func (m *model) chatPane(w, rows int) []string {
 	}
 	out = append(out, header, ruleStyle.Render(strings.Repeat("─", w)))
 	n := m.msgRows()
+	m.layout.chatConv = c.ID
 	m.layout.chatMsg, m.layout.chatText = make([]int, rows), make([]string, rows)
 	for i := range m.layout.chatMsg {
 		m.layout.chatMsg[i] = -1

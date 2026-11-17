@@ -163,6 +163,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 		Version: version, Images: cfg.Images, CustomEmoji: cfg.CustomEmoji == nil || *cfg.CustomEmoji, ImageWidth: cfg.ImageWidth, ImageHeight: cfg.ImageHeight,
 		ComposerHeight: cfg.ComposerHeight, SidebarWidth: cfg.SidebarWidth, HistoryCacheTTL: time.Duration(cfg.HistoryCacheTTL) * time.Minute,
 		PollInterval: time.Duration(cfg.PollSeconds) * time.Second,
+		SettleDelay:  200 * time.Millisecond,
 		ConfigPath:   *cfgPath, ConfigFound: found, LogPath: diag.Path(), StatePath: uistate.Path(),
 	})
 }

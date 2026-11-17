@@ -482,3 +482,19 @@ func jsonString(t *testing.T, v any) string {
 }
 
 var jsonMarshal = json.Marshal
+
+func TestPeopleCacheSavesLookups(t *testing.T) {
+	s, calls := apiServer(t, map[string]handler{"users.info": users})
+	s.creds.TeamID = "T1"
+	s.resolveUsers(context.Background(), []slackMessage{{User: "U1"}})
+	if calls("users.info") != 1 {
+		t.Fatal("no lookup")
+	}
+	fresh, calls2 := apiServer(t, map[string]handler{"users.info": users})
+	fresh.creds.TeamID, fresh.me = "T1", s.me
+	fresh.loadPeople()
+	fresh.resolveUsers(context.Background(), []slackMessage{{User: "U1"}})
+	if calls2("users.info") != 0 || fresh.user("U1") != s.user("U1") || fresh.urls["avatar:U1"] == "" {
+		t.Fatalf("the cache was not used: %d calls, %q", calls2("users.info"), fresh.user("U1"))
+	}
+}

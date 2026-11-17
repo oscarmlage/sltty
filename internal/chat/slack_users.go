@@ -5,10 +5,16 @@ package chat
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // resolveUser looks a person up once: their name and their avatar's URL
@@ -39,6 +45,7 @@ func (s *Slack) resolveUser(ctx context.Context, id string) {
 		}
 		s.mu.Lock()
 		s.users[id] = n
+		s.peopleDirty = true
 		if u := r.User.Profile.Image72; u != "" {
 			s.urls["avatar:"+id] = u
 		}
@@ -81,6 +88,7 @@ func (s *Slack) resolveBot(ctx context.Context, id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.users[id] = cmp.Or(r.Bot.Name, id) // asked once, found or not
+	s.peopleDirty = true
 	if k, u := "avatar:"+id, s.best(r.Bot.Icons); err == nil && u != "" && s.urls[k] == "" {
 		s.urls[k] = u
 	}
@@ -147,6 +155,83 @@ func (s *Slack) resolveUsers(ctx context.Context, msgs []slackMessage) {
 		}()
 	}
 	wg.Wait()
+	s.savePeople()
+}
+
+// The people cache keeps the names and avatar addresses users.info and
+// bots.info gave, a week, so a new session does not ask for them all again
+// (dozens of calls on the first conversations opened). It holds nothing
+// more than the sidebar and messages show, owner-only in the cache dir.
+const peopleTTL = 7 * 24 * time.Hour
+
+type peopleFile struct {
+	Saved time.Time         `json:"saved"`
+	Names map[string]string `json:"names"`
+	URLs  map[string]string `json:"avatars"`
+}
+
+func (s *Slack) peoplePath() string {
+	base, err := os.UserCacheDir()
+	if err != nil || s.creds.TeamID == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(s.creds.TeamID + "/" + s.me))
+	return filepath.Join(base, "sltty", "people-"+hex.EncodeToString(sum[:8])+".json")
+}
+
+func (s *Slack) loadPeople() {
+	p := s.peoplePath()
+	if p == "" {
+		return
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return
+	}
+	var f peopleFile
+	if json.Unmarshal(b, &f) != nil || time.Since(f.Saved) > peopleTTL {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for id, n := range f.Names {
+		if _, ok := s.users[id]; !ok && id != s.me {
+			s.users[id] = n
+		}
+	}
+	for k, u := range f.URLs {
+		if strings.HasPrefix(k, "avatar:") && strings.HasPrefix(u, "https://") && s.urls[k] == "" {
+			s.urls[k] = u
+		}
+	}
+}
+
+func (s *Slack) savePeople() {
+	p := s.peoplePath()
+	s.mu.Lock()
+	if p == "" || !s.peopleDirty {
+		s.mu.Unlock()
+		return
+	}
+	s.peopleDirty = false
+	f := peopleFile{Saved: time.Now(), Names: map[string]string{}, URLs: map[string]string{}}
+	for id, n := range s.users {
+		f.Names[id] = n
+	}
+	for k, u := range s.urls {
+		if strings.HasPrefix(k, "avatar:") {
+			f.URLs[k] = u
+		}
+	}
+	s.mu.Unlock()
+	b, err := json.Marshal(f)
+	if err != nil || os.MkdirAll(filepath.Dir(p), 0o700) != nil {
+		return
+	}
+	tmp := p + ".tmp"
+	if os.WriteFile(tmp, b, 0o600) == nil {
+		_ = os.Rename(tmp, p)
+	}
 }
 
 func (s *Slack) Presence(ctx context.Context) (bool, error) {

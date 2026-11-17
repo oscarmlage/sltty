@@ -33,6 +33,7 @@ type Slack struct {
 	apiBase       string
 	mu            sync.Mutex
 	users         map[string]string
+	peopleDirty   bool // users has names the people cache does not
 	// urls are where File downloads from: the attachments' thumbnails seen
 	// in messages, "emoji:name" and "avatar:id".
 	urls map[string]string
@@ -64,6 +65,7 @@ func NewSlack(ctx context.Context, creds Credentials) (*Slack, error) {
 	if u, err := url.Parse(a.URL); err == nil && u.Scheme == "https" && strings.HasSuffix(u.Hostname(), "slack.com") {
 		s.apiBase = strings.TrimRight(u.String(), "/") + "/api/"
 	}
+	s.loadPeople()
 	return s, nil
 }
 
@@ -104,6 +106,7 @@ func (s *Slack) call(ctx context.Context, method string, form url.Values, out an
 		return err
 	}
 	diag.Printf("slack request %s", method)
+	start := time.Now()
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", "Bearer "+s.creds.Token)
 	req.Header.Set("Cookie", "d="+s.creds.Cookie)
@@ -135,6 +138,6 @@ func (s *Slack) call(ctx context.Context, method string, form url.Values, out an
 		diag.Printf("slack %s API error: %s", method, status.Error)
 		return fmt.Errorf("Slack %s: %s", method, status.Error)
 	}
-	diag.Printf("slack %s OK", method)
+	diag.Printf("slack %s OK (%s)", method, time.Since(start).Round(time.Millisecond))
 	return nil
 }
