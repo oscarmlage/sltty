@@ -51,6 +51,14 @@ func (m *model) sent(msg sentMsg) tea.Cmd {
 		return nil
 	}
 	m.status = "sent"
+	if msg.msg.TS == "" {
+		// The service did not say which message it made (a Slack upload):
+		// it shows when the conversation is read again.
+		if msg.root != "" {
+			return m.loadReplies(msg.id, msg.root)
+		}
+		return m.loadHistory(msg.id)
+	}
 	h := m.history[msg.id]
 	// A live backend may have brought it already.
 	if slices.ContainsFunc(h, func(x chat.Message) bool { return x.TS == msg.msg.TS }) {

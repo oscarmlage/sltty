@@ -378,6 +378,13 @@ func (m *model) composer(in *textarea.Model, w int) []string {
 		title = editTitle.Render(" ↩ "+r.who+" ") + dimStyle.Render(" "+r.text)
 		title = ansi.Truncate(title, max(0, w-6-lipgloss.Width(m.km.first(actNormalMode))-8), "…") + dimStyle.Render(" · "+m.km.first(actNormalMode)+" cancel ")
 	}
+	if f := m.attach[m.attachKey(in)]; f != nil && (m.editing == nil || !focused) {
+		att := editTitle.Render(" 📎 "+f.Name+" ") + dimStyle.Render(" "+humanBytes(len(f.Data))+" · :detach drops it ")
+		if title != "" {
+			att = title + " " + att
+		}
+		title = ansi.Truncate(att, max(0, w-6), "…")
+	}
 	if !boxed() {
 		in.SetWidth(max(1, w-4))
 		return frame(title, strings.Split(in.View(), "\n"), w, focused)

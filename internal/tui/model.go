@@ -252,7 +252,8 @@ type model struct {
 	spinning bool // a spinner tick is in flight
 
 	chatIn, threadIn textarea.Model
-	drafts           map[string]string // unsent text per conversation or thread
+	drafts           map[string]string       // unsent text per conversation or thread
+	attach           map[string]*chat.Upload // a file to send with the next message, per conversation or thread
 
 	width, height int
 	status, err   string
@@ -305,6 +306,7 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		keepUnread:   map[string]bool{},
 		sel:          map[string]int{},
 		drafts:       map[string]string{},
+		attach:       map[string]*chat.Upload{},
 		readThreads:  map[string]int{},
 		readActivity: map[string]bool{},
 		unreadThread: map[string]bool{},
@@ -739,6 +741,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.mouse(msg)
 	case tea.KeyPressMsg:
 		return m, m.key(msg)
+	case tea.PasteMsg:
+		// A file dropped on the terminal arrives as its path: attached.
+		if cmd, ok := m.pasted(msg.Content); ok {
+			return m, cmd
+		}
+	case clipboardMsg:
+		return m, m.gotClipboard(msg)
 	}
 	// Anything else (the cursor blink) goes to whatever is being typed in.
 	var cmd tea.Cmd

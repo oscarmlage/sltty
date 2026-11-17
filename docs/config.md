@@ -56,6 +56,7 @@ its own folders (Archived starts folded).
 `:` opens a command line in the status bar, slk style (`COMMAND` pill; tab
 completes, ↑/↓ walk the history, `esc`/`ctrl+c`/`jk` leave): `:help`,
 `:version`, `:find [name]` (one match jumps there), `:search [words]`,
+`:attach [path]` (no path: the clipboard's picture), `:detach`,
 `:settings`, `:config`, `:theme [name]`, `:layout [slack|panels]`,
 `:clock [12h|24h]`, `:images [on|off]`, `:status` (or `ctrl+s`: active, away, Do Not Disturb), `:away`, `:active`, `:read`, `:read_on_enter [on|off]`, `:fold [section]`,
 `:log`, `:save` (`:w`), `:savequit` (`:wq`) and `:quit` (`:q`).

@@ -106,6 +106,12 @@ func (m *model) insertKey(msg tea.KeyPressMsg, k string) tea.Cmd {
 		if in.Value() == "" && m.editing == nil {
 			return m.editLast()
 		}
+	case actPasteImage:
+		if m.editing == nil {
+			if _, ok := m.backend.(chat.Uploader); ok {
+				return m.pasteImage()
+			}
+		}
 	}
 	var cmd tea.Cmd
 	*in, cmd = in.Update(msg)
@@ -145,6 +151,21 @@ func (m *model) submit(in *textarea.Model) tea.Cmd {
 			msg, err := m.backend.Edit(ctx, e.convID, e.ts, text)
 			return changedMsg{e.convID, msg, err}
 		})
+	}
+	if f := m.attach[m.attachKey(in)]; f != nil {
+		delete(m.attach, m.attachKey(in))
+		in.Reset()
+		up := *f
+		if t := m.thread; in == &m.threadIn && t != nil {
+			m.drafts[threadKey(t.convID, t.root)] = ""
+			return m.upload(t.convID, t.root, text, up)
+		}
+		m.drafts[c.ID] = ""
+		if r := m.replying; r != nil && r.convID == c.ID {
+			m.replying = nil
+			up.ReplyTo = r.ts
+		}
+		return m.upload(c.ID, "", text, up)
 	}
 	if text == "" {
 		return nil

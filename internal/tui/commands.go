@@ -60,6 +60,28 @@ func init() {
 			}
 			return tea.Quit
 		}},
+		{"attach", "[path]", "attach a file to the next message (none: the clipboard's picture)", func(m *model, arg string) tea.Cmd {
+			if m.view != sideConv || m.current() == nil {
+				m.err = "open a conversation first"
+				return nil
+			}
+			if arg == "" {
+				return m.pasteImage()
+			}
+			path, ok := pastedPath(arg)
+			if !ok {
+				m.err = "no such file: " + arg
+				return nil
+			}
+			if err := m.attachFile(path); err != nil {
+				m.err = err.Error()
+			}
+			return nil
+		}},
+		{"detach", "", "drop the file attached to the next message", func(m *model, _ string) tea.Cmd {
+			m.detach()
+			return nil
+		}},
 		{"version", "", "sltty's version", func(m *model, _ string) tea.Cmd {
 			m.status = "sltty " + cmpOr(m.opts.Version, "dev") + " · " + m.backend.Workspace()
 			return nil

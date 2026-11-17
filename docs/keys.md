@@ -20,6 +20,15 @@ does, and it shows so on every device until read; on Slack it is local to
 sltty (Slack's API cannot move the read cursor back), `ctrl+f` search,
 `/` find (chats from the sidebar, messages elsewhere), `i` INSERT.
 
+Files: drop one on the terminal (Ghostty, kitty, iTerm2 and WezTerm paste
+its path) or `ctrl+v` while writing (a picture in the clipboard, a
+screenshot, or a file copied in the Finder; with neither it pastes the
+text as always), or `:attach [path]`. The composer shows `📎 name`, `enter`
+sends it with what you wrote as its caption (on Telegram a picture goes as
+a photo, anything else as a file; `enter` on a message to reply works
+too), `:detach` drops it. Up to 50 MB; reading pictures from the
+clipboard on Linux takes `wl-paste` or `xclip`.
+
 `ctrl+k` or `ctrl+p` switches conversation and `ctrl+f` searches messages;
 `/` is the switcher when the sidebar has the focus and the search elsewhere,
 both in a box in the middle of the screen (slk's finder look). In
@@ -95,6 +104,7 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | INSERT mode | INSERT | `newline` | `shift+enter`, `alt+enter`, `ctrl+j` | new line |
 | INSERT mode | INSERT | `normal_mode` | `esc`, `ctrl+c`, `j k` | back to NORMAL |
 | INSERT mode | INSERT | `edit_last` | `up` | edit your last message |
+| INSERT mode | INSERT | `paste_image` | `ctrl+v` | attach the clipboard's picture or copied file (else paste its text) |
 | Lists | FILTER | `picker_down` | `ctrl+n`, `ctrl+j`, `down` | next while filtering |
 | Lists | FILTER | `picker_up` | `ctrl+p`, `ctrl+k`, `up` | previous while filtering |
 | Lists | FILTER | `picker_select` | `enter` | pick |

@@ -49,7 +49,7 @@ func run(m *model, msg tea.Msg) {
 					queue = append(queue, quick(c))
 				}
 			}
-		case convsMsg, historyMsg, repliesMsg, sentMsg, changedMsg, markedMsg, pictureMsg, customEmojiMsg, presenceMsg, searchMsg, threadsMsg, activityMsg:
+		case convsMsg, historyMsg, repliesMsg, sentMsg, changedMsg, markedMsg, pictureMsg, customEmojiMsg, presenceMsg, searchMsg, threadsMsg, activityMsg, clipboardMsg:
 			queue = append(queue, out)
 		}
 	}
