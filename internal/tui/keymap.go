@@ -50,6 +50,7 @@ const (
 	actOpen        action = "open"
 	actReply       action = "reply"
 	actThread      action = "thread"
+	actRedraw      action = "redraw"
 	actReact       action = "react"
 	actReactions   action = "reactions"
 	actEdit        action = "edit"
@@ -141,6 +142,7 @@ var defaults = []binding{
 	{actShrink, scNormal, "Layout", "shorter composer", []string{"-"}},
 	{actBackOrQuit, scNormal, "Layout", "back step by step, then quit", []string{"q", "ctrl+c"}},
 	{actQuit, scNormal, "Layout", "quit from anywhere (asks first)", []string{}},
+	{actRedraw, scNormal, "Layout", "repaint the whole screen", []string{"ctrl+l"}},
 
 	{actNextTab, scNormal, "Accounts", "next account tab", []string{"g t"}},
 	{actPrevTab, scNormal, "Accounts", "previous account tab", []string{"g T"}},

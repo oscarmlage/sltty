@@ -111,6 +111,7 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | Layout | NORMAL | `composer_shorter` | `-` | shorter composer |
 | Layout | NORMAL | `back_or_quit` | `q`, `ctrl+c` | back step by step, then quit |
 | Layout | NORMAL | `quit` | — | quit from anywhere (asks first) |
+| Layout | NORMAL | `redraw` | `ctrl+l` | repaint the whole screen |
 | Accounts | NORMAL | `next_account` | `g t` | next account tab |
 | Accounts | NORMAL | `previous_account` | `g T` | previous account tab |
 | Accounts | NORMAL | `account_1` … `account_9` | `1` … `9`, `alt+1` … `alt+9` | account tab 1 … 9 (`alt+` also while writing) |

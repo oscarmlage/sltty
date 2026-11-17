@@ -163,7 +163,7 @@ func convLabel(c chat.Conversation) string {
 
 // fit truncates or pads a styled line to exactly w columns.
 func fit(s string, w int) string {
-	s = ansi.Truncate(expandTabs(s), w, "…")
+	s = ansi.Truncate(termWidths(expandTabs(s)), w, "…")
 	return s + strings.Repeat(" ", max(0, w-lipgloss.Width(s)))
 }
 
@@ -173,6 +173,31 @@ func fit(s string, w int) string {
 // scrolled it, and rows of every pane were repeated or left with stale
 // colours until the next full repaint.
 func expandTabs(s string) string { return strings.ReplaceAll(s, "\t", "    ") }
+
+// termWidths rewrites the few emoji sequences whose width the layout and
+// kitty count differently (kitty's own wcswidth): a skin tone on a
+// text-style base (☝🏽: 1 here, 2 there) gets the emoji selector that makes
+// both count 2, and the emoji selector after a plain ASCII letter (n️: 2
+// here, 1 there) goes. One cell of difference makes the terminal wrap the
+// row and scroll the screen: rows repeat until the next full repaint.
+func termWidths(s string) string {
+	if !strings.Contains(s, "\uFE0F") && !strings.ContainsAny(s, "\U0001F3FB\U0001F3FC\U0001F3FD\U0001F3FE\U0001F3FF") {
+		return s
+	}
+	var b strings.Builder
+	prev := rune(0)
+	for _, r := range s {
+		switch {
+		case r == 0xFE0F && prev >= 0x20 && prev < 0x7f:
+			continue // n️ → n
+		case r >= 0x1F3FB && r <= 0x1F3FF && prev != 0xFE0F && prev > 0x7f && ansi.StringWidth(string(prev)) == 1:
+			b.WriteRune(0xFE0F) // ☝🏽 → ☝️🏽
+		}
+		b.WriteRune(r)
+		prev = r
+	}
+	return b.String()
+}
 
 // paint fits a line to w columns on a background: bg is re-applied after
 // each segment's reset, which would otherwise end it.

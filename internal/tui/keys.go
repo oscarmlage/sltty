@@ -321,6 +321,8 @@ func (m *model) paneAction(a action) tea.Cmd {
 		} else {
 			m.focus = paneSide
 		}
+	case actRedraw:
+		return tea.ClearScreen
 	case actNextTab:
 		return func() tea.Msg { return tabMsg{delta: 1} }
 	case actPrevTab:
