@@ -134,7 +134,7 @@ func TestRunsTheDemoByDefault(t *testing.T) {
 		t.Fatalf("backend %T, want the demo", got.b)
 	}
 	o := got.opts
-	if o.Theme != "nord" || o.CustomEmoji || len(o.Sections) != 1 || !o.Sections[0].Collapsed || !o.ConfigFound || o.ConfigPath != cfg || o.Version != version {
+	if o.Theme != "nord" || o.CustomEmoji || len(o.Sections) != 1 || !o.Sections[0].Collapsed || !o.ConfigFound || o.ConfigPath != cfg || o.Version != buildVersion() {
 		t.Fatalf("options: %+v", o)
 	}
 	if _, _, err := do(t, "-config", filepath.Join(dir, "typo.json")); err != nil || got.opts.ConfigFound {

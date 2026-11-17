@@ -77,6 +77,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 		fmt.Fprintf(stderr, "usage: sltty [-config file]\n"+
 			"       sltty keys    print every key binding as a config file\n"+
 			"       sltty config  list what the config file takes\n"+
+			"       sltty version print the version and the commit it was built from\n"+
 			"       sltty login [slack] [--browser|--desktop]  sign in to Slack through Chrome or Slack Desktop\n"+
 			"       sltty login telegram [--phone]  sign in to Telegram: scan a QR code (or phone number and code)\n"+
 			"       sltty logout [slack|telegram]  end that session and remove it\n"+
@@ -128,6 +129,9 @@ func run(args []string, stdout, stderr io.Writer) error {
 			return logoutTelegram(context.Background())
 		}
 		return chat.Logout()
+	case "version":
+		fmt.Fprintln(stdout, "sltty "+buildVersion())
+		return nil
 	case "keys":
 		fmt.Fprintln(stdout, tui.DefaultsJSON())
 		return nil
@@ -160,7 +164,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	}
 	return runTUI(accounts, tui.Options{
 		Keys: cfg.Keys, Theme: cfg.Theme, Layout: cfg.Layout, Clock: cfg.Clock, Themes: cfg.Themes, Sections: sections, PrivateIcon: cfg.PrivateIcon,
-		Version: version, Images: cfg.Images, CustomEmoji: cfg.CustomEmoji == nil || *cfg.CustomEmoji, ImageWidth: cfg.ImageWidth, ImageHeight: cfg.ImageHeight,
+		Version: buildVersion(), Images: cfg.Images, CustomEmoji: cfg.CustomEmoji == nil || *cfg.CustomEmoji, ImageWidth: cfg.ImageWidth, ImageHeight: cfg.ImageHeight,
 		ComposerHeight: cfg.ComposerHeight, SidebarWidth: cfg.SidebarWidth, HistoryCacheTTL: time.Duration(cfg.HistoryCacheTTL) * time.Minute,
 		PollInterval: time.Duration(cfg.PollSeconds) * time.Second,
 		SettleDelay:  200 * time.Millisecond,

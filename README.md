@@ -58,6 +58,7 @@ sltty                   # demo without a saved session; a tab per signed-in acco
 sltty [-config file] [-demo]
 sltty keys                          print every key binding as a config file
 sltty config                        list what the config file takes
+sltty version                       the version and the commit it was built from (also :version)
 sltty login [slack] [--browser|--desktop]  sign in to Slack through Chrome or Slack Desktop
 sltty login telegram [--phone]      sign in to Telegram: a QR code (or phone and code)
 sltty logout [slack|telegram]       end that session and remove it
