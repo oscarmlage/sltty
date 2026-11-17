@@ -126,11 +126,19 @@ func (t *Telegram) Conversations(ctx context.Context) ([]Conversation, error) {
 		return nil, err
 	}
 	var pinned, rest, archived []Conversation
+	seen := make(map[string]struct{}, len(dialogs))
 	for _, d := range dialogs {
 		c, ok := t.conversation(d)
 		if !ok {
 			continue
 		}
+		// Telegram can repeat pinned dialogs while fetching a folder (and
+		// across the main/archive requests). The sidebar has one row per
+		// conversation regardless of how many times it was returned.
+		if _, ok := seen[c.ID]; ok {
+			continue
+		}
+		seen[c.ID] = struct{}{}
 		t.place(&c)
 		switch {
 		case c.Folded:

@@ -196,15 +196,15 @@ type Backend interface {
 type EventKind int
 
 const (
-	EvMessage   EventKind = iota // a new message (Msg; RootTS when it answers one)
-	EvEdited                     // a message changed (Msg)
-	EvReactions                  // the reactions of Msg.TS are now Msg.Reactions
-	EvDeleted                    // the messages TS are gone
-	EvRead                       // the conversation was read elsewhere: Unread are left
-	EvPresence                   // a direct message's person is Online or not
-	EvTyping                     // User is typing (Action says what; empty: stopped)
-	EvConv                       // Conv changed (moved to or from Archived, muted...)
-	EvUnreadMark                 // the conversation was marked unread (Unread 1) or not (0) elsewhere
+	EvMessage    EventKind = iota // a new message (Msg; RootTS when it answers one)
+	EvEdited                      // a message changed (Msg)
+	EvReactions                   // the reactions of Msg.TS are now Msg.Reactions
+	EvDeleted                     // the messages TS are gone
+	EvRead                        // the conversation was read elsewhere: Unread are left
+	EvPresence                    // a direct message's person is Online or not
+	EvTyping                      // User is typing (Action says what; empty: stopped)
+	EvConv                        // Conv changed (moved to or from Archived, muted...)
+	EvUnreadMark                  // the conversation was marked unread (Unread 1) or not (0) elsewhere
 )
 
 // Event is something that happened while the client runs.
