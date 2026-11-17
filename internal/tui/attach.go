@@ -23,6 +23,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/oscarmlage/sltty/internal/chat"
+	"github.com/oscarmlage/sltty/internal/diag"
 )
 
 const (
@@ -147,6 +148,21 @@ func pastedPath(s string) (string, bool) {
 // pasted takes a paste that names a file as an attachment; ok is false for
 // any other paste, which is text.
 func (m *model) pasted(content string) (tea.Cmd, bool) {
+	diag.Printf("tui: paste of %d bytes", len(content))
+	// An empty paste: the terminal had no text to paste (a picture alone in
+	// the clipboard, with cmd+v). The picture is attached.
+	if strings.TrimSpace(content) == "" && m.picker == nil && m.cmdline == nil && m.view == sideConv && m.current() != nil {
+		if _, can := m.backend.(chat.Uploader); can {
+			var cmd tea.Cmd
+			if m.mode != insert {
+				if m.focus == paneSide {
+					m.focus = paneChat
+				}
+				cmd = m.enterInsert()
+			}
+			return tea.Batch(cmd, m.pasteImage()), true
+		}
+	}
 	path, ok := pastedPath(content)
 	if !ok || m.picker != nil || m.cmdline != nil || m.view != sideConv {
 		return nil, false

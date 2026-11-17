@@ -140,3 +140,23 @@ func TestParseAppleData(t *testing.T) {
 		t.Fatal("not a picture")
 	}
 }
+
+// cmd+v: the terminal pastes nothing (a picture alone in the clipboard), or
+// passes super+v on: both attach the clipboard's picture.
+func TestCmdVAttachesTheClipboardPicture(t *testing.T) {
+	m := newTest(t)
+	was := clipboardFile
+	t.Cleanup(func() { clipboardFile = was })
+	pic := pngBytes(t)
+	clipboardFile = func(context.Context) (string, []byte, error) { return "", pic, nil }
+	m.goTo(t, "general")
+	run(m, tea.PasteMsg{Content: ""})
+	if m.mode != insert || m.attach["C1"] == nil {
+		t.Fatalf("empty paste: mode %v, attached %v", m.mode, m.attach["C1"] != nil)
+	}
+	delete(m.attach, "C1")
+	run(m, tea.KeyPressMsg{Code: 'v', Mod: tea.ModSuper})
+	if m.attach["C1"] == nil {
+		t.Fatal("super+v did not attach the picture")
+	}
+}

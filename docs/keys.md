@@ -37,6 +37,13 @@ a photo, anything else as a file; `enter` on a message to reply works
 too), `:detach` drops it. Up to 50 MB; reading pictures from the
 clipboard on Linux takes `wl-paste` or `xclip`.
 
+`cmd+v` with a picture: the terminal takes `cmd+v` and pastes text, so
+with only a picture in the clipboard it depends on it. A terminal that
+pastes nothing in that case lets sltty attach the picture; Ghostty can be
+told to pass `cmd+v` on when it has no text to paste, with
+`keybind = performable:super+v=paste_from_clipboard` in its config. With
+any terminal, `ctrl+v` works.
+
 `ctrl+k` or `ctrl+p` switches conversation and `ctrl+f` searches messages;
 `/` is the switcher when the sidebar has the focus and the search elsewhere,
 both in a box in the middle of the screen (slk's finder look). In
@@ -112,7 +119,7 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | INSERT mode | INSERT | `newline` | `shift+enter`, `alt+enter`, `ctrl+j` | new line |
 | INSERT mode | INSERT | `normal_mode` | `esc`, `ctrl+c`, `j k` | back to NORMAL |
 | INSERT mode | INSERT | `edit_last` | `up` | edit your last message |
-| INSERT mode | INSERT | `paste_image` | `ctrl+v` | attach the clipboard's picture or copied file (else paste its text) |
+| INSERT mode | INSERT | `paste_image` | `ctrl+v`, `super+v` | attach the clipboard's picture or copied file (else paste its text) |
 | Lists | FILTER | `picker_down` | `ctrl+n`, `ctrl+j`, `down` | next while filtering |
 | Lists | FILTER | `picker_up` | `ctrl+p`, `ctrl+k`, `up` | previous while filtering |
 | Lists | FILTER | `picker_select` | `enter` | pick |

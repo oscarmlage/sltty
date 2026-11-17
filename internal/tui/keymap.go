@@ -125,7 +125,7 @@ var defaults = []binding{
 	{actNewline, scInsert, "INSERT mode", "new line", []string{"shift+enter", "alt+enter", "ctrl+j"}},
 	{actNormalMode, scInsert, "INSERT mode", "back to NORMAL", []string{"esc", "ctrl+c", "j k"}},
 	{actEditLast, scInsert, "INSERT mode", "edit your last message", []string{"up"}},
-	{actPasteImage, scInsert, "INSERT mode", "attach the clipboard's picture or copied file (else paste its text)", []string{"ctrl+v"}},
+	{actPasteImage, scInsert, "INSERT mode", "attach the clipboard's picture or copied file (else paste its text)", []string{"ctrl+v", "super+v"}},
 
 	{actPickDown, scPicker, "Lists (ctrl+k, ctrl+f, r, T)", "next while filtering", []string{"ctrl+n", "ctrl+j", "down"}},
 	{actPickUp, scPicker, "Lists (ctrl+k, ctrl+f, r, T)", "previous while filtering", []string{"ctrl+p", "ctrl+k", "up"}},
