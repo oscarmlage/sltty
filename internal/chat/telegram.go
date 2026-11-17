@@ -201,6 +201,7 @@ type Telegram struct {
 	pinned   map[string]bool
 	archived map[string]bool
 	muted    map[string]bool
+	marked   map[string]bool // marked unread (the dialog flag)
 
 	// seen maps the IDs of private and basic group messages (unique per
 	// account) to their conversation: deletions name the IDs only.
@@ -260,7 +261,7 @@ func NewTelegram(ctx context.Context) (*Telegram, error) {
 func newTelegramState() *Telegram {
 	return &Telegram{
 		users: map[int64]*tg.User{}, chats: map[int64]*tg.Chat{}, channels: map[int64]*tg.Channel{},
-		files: map[string]tgFile{}, pinned: map[string]bool{}, archived: map[string]bool{}, muted: map[string]bool{}, seen: map[int]string{},
+		files: map[string]tgFile{}, pinned: map[string]bool{}, archived: map[string]bool{}, muted: map[string]bool{}, marked: map[string]bool{}, seen: map[int]string{},
 		quotes: map[string]string{},
 		events: make(chan Event, 1024),
 	}

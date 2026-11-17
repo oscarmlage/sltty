@@ -132,6 +132,15 @@ func (m *model) toggleRead() tea.Cmd {
 			m.status = "marked read"
 			return m.readTo(c.ID, msgs[len(msgs)-1].TS)
 		}
+		if u, ok := m.backend.(chat.UnreadMarker); ok {
+			// The service keeps a read cursor that only moves forward and a
+			// "marked unread" flag, as its own apps show: the flag it is.
+			m.setUnread(c.ID, 1)
+			delete(m.newFrom, c.ID)
+			m.status = "marked unread"
+			id := c.ID
+			return m.call(func(ctx context.Context) tea.Msg { return markedMsg{id, u.MarkUnread(ctx, id, true)} })
+		}
 		from := len(msgs) - 1 // the sidebar: the last message
 		if m.focus == paneChat {
 			from = m.selected()

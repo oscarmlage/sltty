@@ -55,6 +55,16 @@ func (m *model) live(e chat.Event) tea.Cmd {
 				delete(m.newFrom, e.ConvID)
 			}
 		}
+	case chat.EvUnreadMark:
+		if c, ok := m.convByID(e.ConvID); ok {
+			switch {
+			case e.Unread > 0 && c.Unread == 0:
+				m.setUnread(e.ConvID, 1)
+			case e.Unread == 0 && c.Unread == 1: // only the mark made it unread
+				m.setUnread(e.ConvID, 0)
+				delete(m.newFrom, e.ConvID)
+			}
+		}
 	case chat.EvTyping:
 		return m.noteTyping(e)
 	case chat.EvConv:

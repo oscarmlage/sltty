@@ -12,7 +12,10 @@ full screen, `e` edits your message (`↑` in an empty composer
 edits your last one), `u` toggles read / unread (on a message: unread from
 there on; on a thread or an activity entry: just that one; what `u` marks
 unread stays so until you leave the chat and enter it again: `j/k` in the
-sidebar only previews a chat, `enter`, `l` or a click enters it), `ctrl+f` search,
+sidebar only previews a chat, `enter`, `l` or a click enters it). On Telegram
+`u` marks the whole chat unread on the server, as Telegram's "Mark as unread"
+does, and it shows so on every device until read; on Slack it is local to
+sltty (Slack's API cannot move the read cursor back), `ctrl+f` search,
 `/` find (chats from the sidebar, messages elsewhere), `i` INSERT.
 
 `ctrl+k` or `ctrl+p` switches conversation and `ctrl+f` searches messages;

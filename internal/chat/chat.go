@@ -204,6 +204,7 @@ const (
 	EvPresence                   // a direct message's person is Online or not
 	EvTyping                     // User is typing (Action says what; empty: stopped)
 	EvConv                       // Conv changed (moved to or from Archived, muted...)
+	EvUnreadMark                 // the conversation was marked unread (Unread 1) or not (0) elsewhere
 )
 
 // Event is something that happened while the client runs.
@@ -220,6 +221,13 @@ type Event struct {
 	Online bool
 	User   string // EvTyping
 	Action string // EvTyping: "typing", "recording a voice message"...
+}
+
+// UnreadMarker is a Backend that marks a whole conversation unread on the
+// server (Telegram's "Mark as unread"); its read cursor only moves forward.
+// Mark clears the mark.
+type UnreadMarker interface {
+	MarkUnread(ctx context.Context, convID string, unread bool) error
 }
 
 // Typer is a Backend that tells others the user is typing.

@@ -61,7 +61,8 @@ make Telegram end it. `sltty login telegram` makes an independent one.
 ## Live updates
 
 While sltty runs it receives Telegram's update stream (new, edited and
-deleted messages, reactions, reads on other devices, presence) through
+deleted messages, reactions, reads and "Mark as unread" on other devices,
+presence) through
 gotd's updates manager, which fills gaps with `updates.getDifference`.
 Nothing is polled. Each history is loaded once the sidebar cursor rests on
 it, and calls are paced under Telegram's limits (FLOOD_WAIT is waited out).

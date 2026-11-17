@@ -122,6 +122,22 @@ func (t *Telegram) handle(d tg.UpdateDispatcher) {
 		t.convChanged(p.Peer)
 		return nil
 	})
+	d.OnDialogUnreadMark(func(_ context.Context, _ tg.Entities, u *tg.UpdateDialogUnreadMark) error {
+		p, ok := u.Peer.(*tg.DialogPeer)
+		if !ok {
+			return nil
+		}
+		id := convID(p.Peer)
+		t.mu.Lock()
+		t.marked[id] = u.Unread
+		t.mu.Unlock()
+		e := Event{Kind: EvUnreadMark, ConvID: id}
+		if u.Unread {
+			e.Unread = 1
+		}
+		t.emit(e)
+		return nil
+	})
 	d.OnDialogPinned(func(_ context.Context, _ tg.Entities, u *tg.UpdateDialogPinned) error {
 		p, ok := u.Peer.(*tg.DialogPeer)
 		if !ok {

@@ -75,7 +75,9 @@ func (t *Telegram) loadFolder(ctx context.Context, folder, limit int) ([]tg.Dial
 		var batch []tg.Dialog
 		for _, d := range dialogs {
 			if d, ok := d.(*tg.Dialog); ok {
-				d.FolderID = folder
+				// FolderID is supplied by Telegram with each dialog. Do not
+				// replace it with the requested folder: a response may contain
+				// dialogs from another folder (notably pinned dialogs).
 				batch = append(batch, *d)
 			}
 		}
@@ -100,6 +102,10 @@ func (t *Telegram) loadFolder(ctx context.Context, folder, limit int) ([]tg.Dial
 			break
 		}
 		req.OffsetDate, req.OffsetID, req.OffsetPeer = date, lastD.TopMessage, peer
+		// Pinned dialogs are included only in the first page. Asking for
+		// them again can make Telegram return them with a different folder
+		// placement instead of advancing through the remaining dialogs.
+		req.SetExcludePinned(true)
 	}
 	return out, nil
 }
@@ -163,6 +169,7 @@ func (t *Telegram) conversation(d tg.Dialog) (Conversation, bool) {
 	}
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	t.marked[c.ID] = d.UnreadMark
 	switch p := d.Peer.(type) {
 	case *tg.PeerUser:
 		u, ok := t.users[p.UserID]
@@ -639,7 +646,34 @@ func (t *Telegram) Mark(ctx context.Context, id, ts string) error {
 	} else {
 		_, err = t.api.MessagesReadHistory(ctx, &tg.MessagesReadHistoryRequest{Peer: peer, MaxID: n})
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	// Reading it clears a "Mark as unread", as Telegram's apps do.
+	t.mu.Lock()
+	marked := t.marked[id]
+	t.mu.Unlock()
+	if marked {
+		return t.MarkUnread(ctx, id, false)
+	}
+	return nil
+}
+
+// MarkUnread sets or clears the dialog's unread mark ("Mark as unread" in
+// Telegram's apps): it shows unread on every device until it is read.
+func (t *Telegram) MarkUnread(ctx context.Context, id string, unread bool) error {
+	peer, err := t.inputPeer(id)
+	if err != nil {
+		return err
+	}
+	if _, err := t.api.MessagesMarkDialogUnread(ctx, &tg.MessagesMarkDialogUnreadRequest{
+		Unread: unread, Peer: &tg.InputDialogPeer{Peer: peer}}); err != nil {
+		return err
+	}
+	t.mu.Lock()
+	t.marked[id] = unread
+	t.mu.Unlock()
+	return nil
 }
 
 func (t *Telegram) File(ctx context.Context, id string) ([]byte, error) {
