@@ -61,8 +61,8 @@ func TestConvertMessage(t *testing.T) {
 	if got.TS != "10" || got.User != "Ana López" || got.UserID != "u2" || !got.Edited || strings.Contains(got.Text, "\x1b") {
 		t.Fatalf("message: %+v", got)
 	}
-	if len(got.Context) != 1 || got.Context[0] != "↩ Me: dinner?" {
-		t.Fatalf("reply quote: %q", got.Context)
+	if q := got.Quote; q == nil || q.Who != "Me" || q.Text != "dinner?" || len(got.Context) != 0 {
+		t.Fatalf("reply quote: %+v, context %q", q, got.Context)
 	}
 	if len(got.Reactions) != 1 || got.Reactions[0].Emoji != "👍" || !got.Reactions[0].Mine || got.Reactions[0].Count != 2 {
 		t.Fatalf("reactions: %+v", got.Reactions)

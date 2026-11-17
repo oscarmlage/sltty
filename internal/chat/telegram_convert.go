@@ -23,16 +23,16 @@ func (t *Telegram) see(id int, peer tg.PeerClass) {
 
 // keepQuote remembers what a message says, for the replies to it that
 // arrive without it (live, or in a later page).
-func (t *Telegram) keepQuote(conv string, id int, q string) {
+func (t *Telegram) keepQuote(conv string, id int, q Quote) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if len(t.quotes) > 20000 {
-		t.quotes = map[string]string{}
+		t.quotes = map[string]Quote{}
 	}
 	t.quotes[conv+"/"+strconv.Itoa(id)] = q
 }
 
-func (t *Telegram) quote(conv string, id int) string {
+func (t *Telegram) quote(conv string, id int) Quote {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.quotes[conv+"/"+strconv.Itoa(id)]
@@ -97,18 +97,18 @@ func (t *Telegram) convertMessage(m *tg.Message, byID map[int]tg.MessageClass) M
 				if quote == "" {
 					quote = Sanitize(r.Message)
 				}
-				out.Context = append(out.Context, "↩ "+t.senderName(r.FromID, r.PeerID, r.Out, r.PostAuthor)+": "+snippet(quote))
-			} else if cached != "" {
-				out.Context = append(out.Context, "↩ "+cached)
+				out.Quote = &Quote{Who: t.senderName(r.FromID, r.PeerID, r.Out, r.PostAuthor), Text: snippet(quote)}
+			} else if cached.Text != "" || cached.Who != "" {
+				out.Quote = &cached
 			} else if quote != "" {
-				out.Context = append(out.Context, "↩ "+snippet(quote))
+				out.Quote = &Quote{Text: snippet(quote)}
 			} else if !h.ForumTopic {
-				out.Context = append(out.Context, "↩ in reply to an earlier message")
+				out.Quote = &Quote{Text: "an earlier message"}
 			}
 		}
 	}
 	t.media(&out, m.Media)
-	t.keepQuote(convID(m.PeerID), m.ID, out.User+": "+snippet(text))
+	t.keepQuote(convID(m.PeerID), m.ID, Quote{Who: out.User, Text: snippet(text)})
 	if rs, ok := m.GetReactions(); ok {
 		out.Reactions = t.reactions(rs)
 	}

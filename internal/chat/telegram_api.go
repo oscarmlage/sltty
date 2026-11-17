@@ -409,11 +409,18 @@ func (t *Telegram) Reply(ctx context.Context, id, ts, text string) (Message, err
 	if m, ok := t.fromUpdates(upd); ok {
 		return m, nil
 	}
-	if s, ok := upd.(*tg.UpdateShortSentMessage); ok {
-		return Message{TS: strconv.Itoa(s.ID), User: t.Me(), UserID: "u" + strconv.FormatInt(t.self.ID, 10),
-			Text: Sanitize(text), At: time.Unix(int64(s.Date), 0)}, nil
+	// In a private chat the answer is only the new ID: the reply is put
+	// together here, quoting what it answers as the history will.
+	q := t.quote(id, n)
+	if q.Who == "" && q.Text == "" {
+		q.Text = "an earlier message"
 	}
-	return Message{TS: "0", User: t.Me(), Text: Sanitize(text), At: time.Now()}, nil
+	out := Message{TS: "0", User: t.Me(), Text: Sanitize(text), At: time.Now(), Quote: &q}
+	if s, ok := upd.(*tg.UpdateShortSentMessage); ok {
+		out.TS, out.UserID, out.At = strconv.Itoa(s.ID), "u"+strconv.FormatInt(t.self.ID, 10), time.Unix(int64(s.Date), 0)
+		t.keepQuote(id, s.ID, Quote{Who: out.User, Text: snippet(out.Text)})
+	}
+	return out, nil
 }
 
 func (t *Telegram) isBroadcast(id string) bool {

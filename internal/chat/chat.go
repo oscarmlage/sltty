@@ -95,6 +95,14 @@ type Message struct {
 	Files       []File       // uploaded files
 	Attachments []Attachment // Slack message attachments/cards
 	Context     []string     // the small print under it (Block Kit context)
+	// Quote is the message it answers (a Telegram reply), drawn above it.
+	Quote *Quote
+}
+
+// Quote is a message another one answers: who wrote it and its beginning.
+// Who is empty when it is not known (an old message).
+type Quote struct {
+	Who, Text string
 }
 
 // File is an attachment. Images have their size; the bytes come from

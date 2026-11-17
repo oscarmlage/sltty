@@ -79,6 +79,9 @@ func renderMsgs(msgs []chat.Message, width int, inThread bool, me string, now ti
 		// [label](url) (clickable below) and, for Block Kit messages, the
 		// blocks; Raw is only the markup an edit starts from (for apps, a
 		// one-line fallback).
+		if q := msg.Quote; q != nil {
+			lines = append(lines, quoteLines(*q, me, body)...)
+		}
 		rendered := a.richText(emoji.Expand(msg.Text), words)
 		text := strings.Split(ansi.Wrap(rendered, body, " -"), "\n")
 		lines = append(lines, text...)
@@ -271,4 +274,20 @@ func follow(off, total, rows int, b block) int {
 		off = total - b.to
 	}
 	return max(0, min(off, max(0, total-rows)))
+}
+
+// quoteLines is the message a reply answers, above it as Telegram draws it:
+// a bar, who wrote it, and its beginning on one line.
+func quoteLines(q chat.Quote, me string, w int) []string {
+	bar := linkStyle.Render("▎")
+	room := max(1, w-2)
+	text := ansi.Truncate(strings.Join(strings.Fields(q.Text), " "), room, "…")
+	if q.Who == "" {
+		return []string{bar + " " + dimStyle.Render("in reply to "+text)}
+	}
+	who := nameStyle
+	if q.Who == me {
+		who = meStyle
+	}
+	return []string{bar + " " + who.Render(ansi.Truncate(q.Who, room, "…")), bar + " " + dimStyle.Render(text)}
 }

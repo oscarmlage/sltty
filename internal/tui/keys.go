@@ -160,6 +160,9 @@ func (m *model) submit(in *textarea.Model) tea.Cmd {
 		if rp, ok := m.backend.(chat.Replier); ok {
 			return m.call(func(ctx context.Context) tea.Msg {
 				msg, err := rp.Reply(ctx, r.convID, r.ts, text)
+				if err == nil && msg.Quote == nil { // shown at once as what it answers
+					msg.Quote = &chat.Quote{Who: r.who, Text: r.text}
+				}
 				return sentMsg{r.convID, "", msg, err}
 			})
 		}

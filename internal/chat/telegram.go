@@ -206,7 +206,7 @@ type Telegram struct {
 	// seen maps the IDs of private and basic group messages (unique per
 	// account) to their conversation: deletions name the IDs only.
 	seen   map[int]string
-	quotes map[string]string // "conv/id" → "Name: text…"
+	quotes map[string]Quote // "conv/id" → who wrote it, its beginning
 	events chan Event
 }
 
@@ -262,7 +262,7 @@ func newTelegramState() *Telegram {
 	return &Telegram{
 		users: map[int64]*tg.User{}, chats: map[int64]*tg.Chat{}, channels: map[int64]*tg.Channel{},
 		files: map[string]tgFile{}, pinned: map[string]bool{}, archived: map[string]bool{}, muted: map[string]bool{}, marked: map[string]bool{}, seen: map[int]string{},
-		quotes: map[string]string{},
+		quotes: map[string]Quote{},
 		events: make(chan Event, 1024),
 	}
 }

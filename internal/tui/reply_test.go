@@ -45,6 +45,13 @@ func TestEnterRepliesOnTelegram(t *testing.T) {
 	if h[len(h)-1].Text != "claro" || m.replying != nil {
 		t.Fatal("the reply is not in the chat")
 	}
+	// What it answers is drawn above it, as Telegram does: the bar, who,
+	// then the beginning of the message.
+	s := screen(m)
+	who, said, reply := strings.Index(s, "▎ "+sel.User), strings.Index(s, "▎ "+strings.Fields(sel.Text)[0]), strings.LastIndex(s, "claro")
+	if who < 0 || said < 0 || !(who < said && said < reply) {
+		t.Fatalf("no quote above the reply:\n%s", s)
+	}
 	// esc drops a reply; t still opens the thread.
 	press(m, "esc", "enter", "esc")
 	if m.replying != nil || m.mode != normal {
