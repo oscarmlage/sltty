@@ -251,6 +251,21 @@ type Replier interface {
 	Reply(ctx context.Context, convID, ts, text string) (Message, error)
 }
 
+// Upload is a file to send: its name and its bytes. ReplyTo, on a
+// Replier's backend, is the message it answers (Telegram's reply).
+type Upload struct {
+	Name    string
+	Data    []byte
+	ReplyTo string
+}
+
+// Uploader is a Backend that sends files: Upload posts f with text as its
+// caption, in the conversation or in thread rootTS. A Message without TS
+// means the service did not tell it: the conversation shows it on reload.
+type Uploader interface {
+	Upload(ctx context.Context, convID, rootTS, text string, f Upload) (Message, error)
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error

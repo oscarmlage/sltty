@@ -507,3 +507,32 @@ func TestPeopleCacheSavesLookups(t *testing.T) {
 		t.Fatalf("the cache was not used: %d calls, %q", calls2("users.info"), fresh.user("U1"))
 	}
 }
+
+func TestUploadInThreeSteps(t *testing.T) {
+	var base string
+	var completed url.Values
+	s, calls := apiServer(t, map[string]handler{
+		"files.getUploadURLExternal": func(f url.Values) any {
+			if f.Get("filename") != "shot.png" || f.Get("length") != "4" {
+				t.Errorf("upload URL asked for %v", f)
+			}
+			return ok(obj{"upload_url": base + "/upload/v1/abc", "file_id": "F1"})
+		},
+		"/upload/v1/abc": func(url.Values) any { return "OK - 4" },
+		"files.completeUploadExternal": func(f url.Values) any {
+			completed = f
+			return ok(obj{"files": []obj{{"id": "F1"}}})
+		},
+	})
+	base = strings.TrimSuffix(s.apiBase, "/api/")
+	got, err := s.Upload(context.Background(), "C1", "5.0", "look", Upload{Name: "shot.png", Data: []byte("\x89PNG")})
+	if err != nil || got.TS != "" {
+		t.Fatalf("upload: %+v %v", got, err)
+	}
+	if calls("/upload/v1/abc") != 1 {
+		t.Fatal("the bytes were not sent")
+	}
+	if completed.Get("channel_id") != "C1" || completed.Get("thread_ts") != "5.0" || completed.Get("initial_comment") != "look" || !strings.Contains(completed.Get("files"), `"id":"F1"`) {
+		t.Fatalf("complete: %v", completed)
+	}
+}

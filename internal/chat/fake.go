@@ -1,8 +1,12 @@
 package chat
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,6 +24,7 @@ type Fake struct {
 	replies   map[string][]Message // by conversation + "/" + root ts
 	seq       int
 	now       func() time.Time
+	uploads   map[string][]byte // file ID → what was uploaded
 }
 
 // line is a scripted message: "user: text", optionally with reactions and
@@ -442,4 +447,29 @@ func (f *Fake) Activity(context.Context) ([]Activity, error) {
 	}
 	slices.SortStableFunc(out, func(a, b Activity) int { return b.At.Compare(a.At) })
 	return out, nil
+}
+
+// Upload sends f as a message of its own, with text as its caption; its
+// bytes are what File gives for it.
+func (f *Fake) Upload(ctx context.Context, id, root, text string, up Upload) (Message, error) {
+	m, err := f.Send(ctx, id, root, text)
+	if err != nil {
+		return m, err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.uploads == nil {
+		f.uploads = map[string][]byte{}
+	}
+	fid := "U" + m.TS
+	f.uploads[fid] = up.Data
+	file := File{ID: fid, Name: up.Name, Mime: http.DetectContentType(up.Data)}
+	if cfg, _, err := image.DecodeConfig(bytes.NewReader(up.Data)); err == nil {
+		file.W, file.H = cfg.Width, cfg.Height
+	}
+	m.Files = []File{file}
+	if stored := f.find(id, m.TS); stored != nil {
+		stored.Files = m.Files
+	}
+	return m, nil
 }

@@ -6,12 +6,14 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gotd/td/telegram/downloader"
+	"github.com/gotd/td/telegram/uploader"
 	"github.com/gotd/td/tg"
 
 	"github.com/oscarmlage/sltty/internal/diag"
@@ -341,38 +343,48 @@ func randomID() int64 {
 	return int64(binary.LittleEndian.Uint64(b[:]))
 }
 
-func (t *Telegram) Send(ctx context.Context, id, rootTS, text string) (Message, error) {
+// target is where a message to conversation id goes: its peer and, in
+// thread rootTS, what it replies to (a channel post's comments live in its
+// discussion group).
+func (t *Telegram) target(ctx context.Context, id, rootTS string) (tg.InputPeerClass, *tg.InputReplyToMessage, error) {
 	peer, err := t.inputPeer(id)
+	if err != nil || rootTS == "" {
+		return peer, nil, err
+	}
+	root, err := msgID(rootTS)
+	if err != nil {
+		return nil, nil, err
+	}
+	reply := &tg.InputReplyToMessage{ReplyToMsgID: root}
+	if _, ok := peer.(*tg.InputPeerChannel); ok {
+		reply.SetTopMsgID(root) // a supergroup thread
+	}
+	if t.isBroadcast(id) {
+		d, err := t.api.MessagesGetDiscussionMessage(ctx, &tg.MessagesGetDiscussionMessageRequest{Peer: peer, MsgID: root})
+		if err != nil {
+			return nil, nil, fmt.Errorf("comments: %w", err)
+		}
+		t.remember(d.Users, d.Chats)
+		if len(d.Messages) == 0 {
+			return nil, nil, fmt.Errorf("this post has no comments")
+		}
+		first := d.Messages[len(d.Messages)-1]
+		if peer, err = t.inputPeer(convID(peerOf(first))); err != nil {
+			return nil, nil, err
+		}
+		reply = &tg.InputReplyToMessage{ReplyToMsgID: first.GetID()}
+		reply.SetTopMsgID(first.GetID())
+	}
+	return peer, reply, nil
+}
+
+func (t *Telegram) Send(ctx context.Context, id, rootTS, text string) (Message, error) {
+	peer, reply, err := t.target(ctx, id, rootTS)
 	if err != nil {
 		return Message{}, err
 	}
 	req := &tg.MessagesSendMessageRequest{Peer: peer, Message: text, RandomID: randomID()}
-	if rootTS != "" {
-		root, err := msgID(rootTS)
-		if err != nil {
-			return Message{}, err
-		}
-		reply := &tg.InputReplyToMessage{ReplyToMsgID: root}
-		if _, ok := peer.(*tg.InputPeerChannel); ok {
-			reply.SetTopMsgID(root) // a supergroup thread
-		}
-		// A channel post's comments live in its discussion group.
-		if t.isBroadcast(id) {
-			d, err := t.api.MessagesGetDiscussionMessage(ctx, &tg.MessagesGetDiscussionMessageRequest{Peer: peer, MsgID: root})
-			if err != nil {
-				return Message{}, fmt.Errorf("comments: %w", err)
-			}
-			t.remember(d.Users, d.Chats)
-			if len(d.Messages) == 0 {
-				return Message{}, fmt.Errorf("this post has no comments")
-			}
-			first := d.Messages[len(d.Messages)-1]
-			if req.Peer, err = t.inputPeer(convID(peerOf(first))); err != nil {
-				return Message{}, err
-			}
-			reply = &tg.InputReplyToMessage{ReplyToMsgID: first.GetID()}
-			reply.SetTopMsgID(first.GetID())
-		}
+	if reply != nil {
 		req.SetReplyTo(reply)
 	}
 	upd, err := t.api.MessagesSendMessage(ctx, req)
@@ -823,4 +835,48 @@ func (t *Telegram) Typing(ctx context.Context, id, rootTS string) error {
 	}
 	_, err = t.api.MessagesSetTyping(ctx, req)
 	return err
+}
+
+// maxPhoto is the largest picture Telegram takes as a photo; a bigger one
+// goes as a file.
+const maxPhoto = 10 << 20
+
+// Upload sends a file: a picture as a photo, anything else as a document,
+// with text as its caption.
+func (t *Telegram) Upload(ctx context.Context, id, rootTS, text string, f Upload) (Message, error) {
+	peer, reply, err := t.target(ctx, id, rootTS)
+	if err != nil {
+		return Message{}, err
+	}
+	if f.ReplyTo != "" && reply == nil {
+		n, err := msgID(f.ReplyTo)
+		if err != nil {
+			return Message{}, err
+		}
+		reply = &tg.InputReplyToMessage{ReplyToMsgID: n}
+	}
+	file, err := uploader.NewUploader(t.api).FromBytes(ctx, f.Name, f.Data)
+	if err != nil {
+		return Message{}, fmt.Errorf("uploading %s: %w", f.Name, err)
+	}
+	var media tg.InputMediaClass
+	switch mime := http.DetectContentType(f.Data); {
+	case (mime == "image/jpeg" || mime == "image/png" || mime == "image/webp") && len(f.Data) <= maxPhoto:
+		media = &tg.InputMediaUploadedPhoto{File: file}
+	default:
+		media = &tg.InputMediaUploadedDocument{File: file, MimeType: mime,
+			Attributes: []tg.DocumentAttributeClass{&tg.DocumentAttributeFilename{FileName: f.Name}}}
+	}
+	req := &tg.MessagesSendMediaRequest{Peer: peer, Media: media, Message: text, RandomID: randomID()}
+	if reply != nil {
+		req.SetReplyTo(reply)
+	}
+	upd, err := t.api.MessagesSendMedia(ctx, req)
+	if err != nil {
+		return Message{}, err
+	}
+	if m, ok := t.fromUpdates(upd); ok {
+		return m, nil
+	}
+	return Message{}, nil
 }

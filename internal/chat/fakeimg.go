@@ -33,6 +33,12 @@ func (f *Fake) File(_ context.Context, id string) ([]byte, error) {
 	if full, ok := strings.CutPrefix(id, "full:"); ok && fakeFiles[full].ID != "" {
 		id = full // the same picture: it is drawn at its size
 	}
+	f.mu.Lock()
+	up, ok := f.uploads[strings.TrimPrefix(id, "full:")]
+	f.mu.Unlock()
+	if ok {
+		return up, nil
+	}
 	switch {
 	case id == "F1":
 		im = dashboard()
