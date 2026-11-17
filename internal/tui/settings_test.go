@@ -28,13 +28,13 @@ func TestSettingsPanel(t *testing.T) {
 	if !boxed() {
 		t.Fatal("enter on Layout did not switch it")
 	}
-	press(m, "j", "j", "j", "j", "j") // past the clock, images, emoji and read-on-enter: composer
+	press(m, "j", "j", "j", "j", "j", "j") // past sidebar chats, clock, images, emoji and read-on-enter: composer
 	rows := m.inputRows
 	press(m, "l", "l")
 	if m.inputRows != rows+2 || !strings.Contains(screen(m), `"composer_height": 4`) {
 		t.Fatalf("composer %d, want %d", m.inputRows, rows+2)
 	}
-	press(m, "j", "j", "j", "j", "j", "enter") // sidebar, unread filter, cache and TTL, then keybindings
+	press(m, "j", "j", "j", "j", "enter") // sidebar width, cache and TTL, then keybindings
 	if !m.help || m.sheet == nil || m.sheet.title != "Keybindings" {
 		t.Fatal("enter on Keybindings did not open them")
 	}
@@ -63,7 +63,7 @@ func TestClockSetting(t *testing.T) {
 	if got := clock(at, at); got != "21:05" {
 		t.Fatalf("24h by default: %q", got)
 	}
-	press(m, ";", "j", "j")
+	press(m, ";", "j", "j", "j") // past theme, layout and sidebar chats
 	if !strings.Contains(screen(m), "‹ 24h") {
 		t.Fatal("no clock in the settings")
 	}

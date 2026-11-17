@@ -298,3 +298,23 @@ func TestHiddenAccountDoesNotReadItsMessages(t *testing.T) {
 		t.Fatal("back in the chat, the message is not read")
 	}
 }
+
+func TestSettingsTellTheAccountsFromTheShared(t *testing.T) {
+	a := newTestApp(t)
+	drive(a, tea.KeyPressMsg{Code: ';', Text: ";"})
+	s := strings.Join(appScreen(a), "\n")
+	own, shared := strings.Index(s, "THIS ACCOUNT · Flywire"), strings.Index(s, "ALL ACCOUNTS")
+	theme, unread, clock := strings.Index(s, "Theme"), strings.Index(s, "Sidebar chats"), strings.Index(s, "Clock")
+	if own < 0 || shared < 0 || !(own < theme && theme < unread && unread < shared && shared < clock) {
+		t.Fatalf("settings groups:\n%s", s)
+	}
+	if strings.Contains(s, `"theme":`) {
+		t.Fatal("with several accounts the config line should only keep the shared settings")
+	}
+	// One account: no groups, the theme is the config's to keep.
+	m := newTest(t)
+	press(m, ";")
+	if s := screen(m); strings.Contains(s, "ALL ACCOUNTS") || !strings.Contains(s, `"theme":`) {
+		t.Fatalf("single account settings:\n%s", s)
+	}
+}

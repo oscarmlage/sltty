@@ -211,6 +211,7 @@ type model struct {
 	away        bool // presence
 	readOnEnter bool
 	hidden      bool                 // its account's tab is not the one in front
+	multi       bool                 // one of several accounts: settings tell its own from the shared
 	polls       int                  // polls so far (a backend without live updates)
 	marked      map[string]time.Time // conversation → when its read cursor was last moved here
 	keepUnread  map[string]bool      // marked unread here, which the service cannot keep

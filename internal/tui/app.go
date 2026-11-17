@@ -41,6 +41,7 @@ type app struct {
 func newApp(tabs []*model) *app {
 	for i, m := range tabs {
 		m.hidden = i > 0
+		m.multi = len(tabs) > 1
 	}
 	return &app{tabs: tabs}
 }

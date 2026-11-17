@@ -14,22 +14,25 @@ import (
 
 // The settings panel (; or :settings): theme, layout, the clock, images, the
 // composer and sidebar sizes, and the way to the keybindings and the config
-// reference. j/k move, h/l (or ←/→) change, enter opens; the screen behind
+// reference. The ones each account keeps for itself (theme, layout, the
+// unread-only sidebar) come first under the account's name; the ones every
+// account shares follow under All accounts. j/k move, h/l (or ←/→) change, enter opens; the screen behind
 // shows each change at once. Changes last the session; the panel tells the
 // config lines that keep them.
 
 type settings struct{ cursor int }
 
+// The rows, in panel order: this account's first, then the shared ones.
 const (
 	setTheme = iota
 	setLayout
+	setUnreadOnly
 	setClock
 	setImages
 	setEmoji
 	setReadOnEnter
 	setComposer
 	setSidebar
-	setUnreadOnly
 	setHistoryCache
 	setHistoryCacheTTL
 	setKeys
@@ -178,13 +181,13 @@ func (m *model) overlaySettings(rows []string) {
 	items := []row{
 		{"Theme", "‹ " + m.themeName + " ›"},
 		{"Layout", "‹ " + layout + " ›"},
+		{"Sidebar chats", "‹ " + map[bool]string{true: "unread only", false: "all"}[m.unreadOnly] + " ›"},
 		{"Clock", "‹ " + clockName() + dimStyle.Render(" · "+hourOf(m.now())) + " ›"},
 		{"Images", "‹ " + images + " ›"},
 		{"Custom emoji", "‹ " + emoji + " ›"},
 		{"Read on enter", "‹ " + onOff(m.readOnEnter) + " ›"},
 		{"Composer", slider(m.inputRows, 1, max(2, m.contentRows()/2), 16) + fmt.Sprintf(" %d rows", m.inputRows)},
-		{"Sidebar", slider(m.side, minSide, max(minSide+1, maxSide), 16) + fmt.Sprintf(" %d cols", m.side)},
-		{"Sidebar chats", "‹ " + map[bool]string{true: "unread only", false: "all"}[m.unreadOnly] + " ›"},
+		{"Sidebar width", slider(m.side, minSide, max(minSide+1, maxSide), 16) + fmt.Sprintf(" %d cols", m.side)},
 		{"History cache", "‹ " + onOff(m.opts.HistoryCacheTTL > 0) + " ›"},
 		{"Cache TTL", "‹ " + cacheTTLName(m.opts.HistoryCacheTTL) + " ›"},
 		{"Keybindings", dimStyle.Render("enter ›")},
@@ -196,14 +199,25 @@ func (m *model) overlaySettings(rows []string) {
 		if i == m.settings.cursor {
 			mark, label = modalMark.Render("▌")+" ", modalSel.Render(it.label)
 		}
-		if i == setKeys {
+		switch {
+		case i == setTheme && m.multi:
+			body = append(body, sectionTitle("THIS ACCOUNT · "+m.backend.Workspace()))
+		case i == setClock && m.multi:
+			body = append(body, "", sectionTitle("ALL ACCOUNTS"))
+		case i == setKeys:
 			body = append(body, "")
 		}
 		body = append(body, mark+fit(label, 16)+it.value)
 	}
 	k := m.km.first
-	keep := fmt.Sprintf(`"theme": %q, "layout": %q, "clock": %q, "images": %q, "read_on_enter": %t, "composer_height": %d, "sidebar_width": %d`,
-		m.themeName, layout, clockName(), map[bool]string{true: cmpOr(m.opts.Images, "auto"), false: "off"}[m.imgs.on], m.readOnEnter, m.inputRows, m.side)
+	// With several accounts each keeps its theme and layout in the local
+	// state: the config only has the shared settings to offer.
+	keep := fmt.Sprintf(`"theme": %q, "layout": %q, `, m.themeName, layout)
+	if m.multi {
+		keep = ""
+	}
+	keep += fmt.Sprintf(`"clock": %q, "images": %q, "read_on_enter": %t, "composer_height": %d, "sidebar_width": %d`,
+		clockName(), map[bool]string{true: cmpOr(m.opts.Images, "auto"), false: "off"}[m.imgs.on], m.readOnEnter, m.inputRows, m.side)
 	keep += fmt.Sprintf(`, "history_cache_ttl": %d`, int(m.opts.HistoryCacheTTL/time.Minute))
 	body = append(body, "", dimStyle.Render("to keep it, in "+m.opts.ConfigPath+":"))
 	for _, l := range wrapPlain(keep, inner) {
@@ -230,3 +244,6 @@ func wrapPlain(s string, w int) []string {
 	}
 	return append(out, line)
 }
+
+// sectionTitle heads a group of the settings panel.
+func sectionTitle(s string) string { return dimStyle.Bold(true).Render(s) }
