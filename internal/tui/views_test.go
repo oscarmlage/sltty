@@ -98,6 +98,25 @@ func TestUnreadOnlyKeepsTheOpenChatWhenRead(t *testing.T) {
 	}
 }
 
+func TestUnreadOnlyKeepsTheChatAfterEnteringAndLeaving(t *testing.T) {
+	for _, keys := range [][]string{{"l", "h"}, {"enter", "esc"}, {"right", "left"}, {"tab", "tab"}} {
+		m := newTest(t)
+		m.goTo(t, "tools-team")
+		press(m, "U")
+		press(m, keys...) // entering reads it
+		if c := m.current(); c.Name != "tools-team" || c.Unread != 0 || m.focus != paneSide {
+			t.Fatalf("%v: on %q, %d unread, focus %v", keys, c.Name, c.Unread, m.focus)
+		}
+		if !slices.Contains(m.sideOrder(), m.sideCurrent()) {
+			t.Fatalf("%v: the chat just read left the sidebar", keys)
+		}
+		press(m, "j")
+		if m.current().Name == "tools-team" || m.current().Unread == 0 {
+			t.Fatalf("%v: j went to %q", keys, m.current().Name)
+		}
+	}
+}
+
 func TestSidebarWalksThreadsAndActivity(t *testing.T) {
 	m := newTest(t)
 	press(m, "k") // from #general up: its section's header, Activity, Threads
