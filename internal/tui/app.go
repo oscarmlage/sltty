@@ -38,7 +38,12 @@ type app struct {
 	width, height int
 }
 
-func newApp(tabs []*model) *app { return &app{tabs: tabs} }
+func newApp(tabs []*model) *app {
+	for i, m := range tabs {
+		m.hidden = i > 0
+	}
+	return &app{tabs: tabs}
+}
 
 var ownPkg = reflect.TypeFor[app]().PkgPath()
 
@@ -189,10 +194,16 @@ func (a *app) switchTab(t tabMsg) tea.Cmd {
 	from := a.cur()
 	a.active = next
 	to := a.cur()
+	from.hidden, to.hidden = true, false
 	shareSettings(from, to)
 	to.setTheme(to.themeName, to.layoutName) // each account keeps its own
+	// Back in a chat that got messages meanwhile: now they are read.
+	var read tea.Cmd
+	if id := to.inChat(); id != "" && to.readOnEnter {
+		read = to.readIn(id)
+	}
 	// Different content everywhere: repaint the screen whole.
-	return tea.Batch(tea.ClearScreen, a.wrap(next, to.imageCmds()))
+	return tea.Batch(tea.ClearScreen, a.wrap(next, to.imageCmds()), a.wrap(next, read))
 }
 
 // shareSettings gives to the settings of from that are one for every

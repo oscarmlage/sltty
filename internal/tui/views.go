@@ -197,6 +197,9 @@ func (m *model) readIn(id string) tea.Cmd {
 // inChat is the conversation whose messages have the focus, "" when the
 // focus is on the sidebar, a list view or a thread.
 func (m *model) inChat() string {
+	if m.hidden { // another account's tab is in front: nobody reads this one
+		return ""
+	}
 	if s := m.spot(); s.focus == paneChat {
 		return s.conv
 	}

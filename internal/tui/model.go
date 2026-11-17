@@ -201,6 +201,7 @@ type model struct {
 	cmdHist     int  // the entry up/down are on, -1 for none
 	away        bool // presence
 	readOnEnter bool
+	hidden      bool                 // its account's tab is not the one in front
 	polls       int                  // polls so far (a backend without live updates)
 	marked      map[string]time.Time // conversation → when its read cursor was last moved here
 	keepUnread  map[string]bool      // marked unread here, which the service cannot keep

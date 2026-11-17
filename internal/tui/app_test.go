@@ -275,3 +275,26 @@ func TestAccountKeysAreConfigurable(t *testing.T) {
 		t.Fatalf("help: %v, %d account rows", groups, len(rows["Accounts"]))
 	}
 }
+
+func TestHiddenAccountDoesNotReadItsMessages(t *testing.T) {
+	a := newTestApp(t)
+	tg := a.tabs[1]
+	drive(a, tea.KeyPressMsg{Code: '2', Text: "2"})
+	drive(a, tea.KeyPressMsg{Code: 'l', Text: "l"}) // into the messages of tab 2
+	id := tg.inChat()
+	if id == "" {
+		t.Fatal("not in the chat")
+	}
+	drive(a, tea.KeyPressMsg{Code: '1', Mod: tea.ModAlt})
+	if tg.inChat() != "" {
+		t.Fatal("a hidden account still reads")
+	}
+	tg.live(chat.Event{Kind: chat.EvMessage, ConvID: id, Msg: chat.Message{TS: "777", User: "ana", Text: "hola"}})
+	if c, _ := tg.convByID(id); c.Unread != 1 {
+		t.Fatalf("a message while away: %d unread, want 1", c.Unread)
+	}
+	drive(a, tea.KeyPressMsg{Code: '2', Mod: tea.ModAlt})
+	if c, _ := tg.convByID(id); c.Unread != 0 {
+		t.Fatal("back in the chat, the message is not read")
+	}
+}
