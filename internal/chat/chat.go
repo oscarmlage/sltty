@@ -230,6 +230,12 @@ type UnreadMarker interface {
 	MarkUnread(ctx context.Context, convID string, unread bool) error
 }
 
+// Replier is a Backend whose replies quote a message in the conversation
+// itself (Telegram's reply), besides threads: Reply posts text answering ts.
+type Replier interface {
+	Reply(ctx context.Context, convID, ts, text string) (Message, error)
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error

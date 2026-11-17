@@ -64,3 +64,28 @@ func TestMarkUnreadSetsTheDialogFlag(t *testing.T) {
 		t.Fatalf("calls %#v", *calls)
 	}
 }
+
+func TestReplyQuotesWithoutAThread(t *testing.T) {
+	tgm := newTestTelegram()
+	var sent *tg.MessagesSendMessageRequest
+	tgm.api = tg.NewClient(invokerFunc(func(_ context.Context, in bin.Encoder, out bin.Decoder) error {
+		if r, ok := in.(*tg.MessagesSendMessageRequest); ok {
+			sent = r
+		}
+		if o, ok := out.(*tg.UpdatesBox); ok {
+			o.Updates = &tg.UpdateShortSentMessage{ID: 77, Date: 1}
+		}
+		return nil
+	}))
+	m, err := tgm.Reply(context.Background(), "c4", "12", "hola")
+	if err != nil || m.TS != "77" {
+		t.Fatalf("reply: %v %+v", err, m)
+	}
+	rt, ok := sent.ReplyTo.(*tg.InputReplyToMessage)
+	if !ok || rt.ReplyToMsgID != 12 {
+		t.Fatalf("reply_to %#v", sent.ReplyTo)
+	}
+	if _, ok := rt.GetTopMsgID(); ok {
+		t.Fatal("a reply in the chat must not go to a thread")
+	}
+}

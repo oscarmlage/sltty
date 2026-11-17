@@ -49,6 +49,7 @@ const (
 	actPrevChat    action = "prev_chat"
 	actOpen        action = "open"
 	actReply       action = "reply"
+	actThread      action = "thread"
 	actReact       action = "react"
 	actReactions   action = "reactions"
 	actEdit        action = "edit"
@@ -104,7 +105,8 @@ var defaults = []binding{
 	{actPrevMatch, scNormal, "Move around", "previous search result", []string{"N"}},
 	{actFold, scNormal, "Move around", "fold / unfold the sidebar section", []string{"space", "z a"}},
 
-	{actOpen, scNormal, "Messages", "open the chat / the thread", []string{"enter", "t"}},
+	{actOpen, scNormal, "Messages", "open the chat / the thread (Telegram: reply to the message)", []string{"enter"}},
+	{actThread, scNormal, "Messages", "open the thread (Telegram: its replies, a post's comments)", []string{"t"}},
 	{actReply, scNormal, "Messages", "reply in the thread", nil},
 	{actReact, scNormal, "Messages", "add or remove a reaction", []string{"r"}},
 	{actReactions, scNormal, "Messages", "show who reacted", []string{"R"}},

@@ -335,6 +335,9 @@ func (m *model) composer(in *textarea.Model, w int) []string {
 	title := ""
 	if m.editing != nil && focused {
 		title = editTitle.Render(" editing ") + dimStyle.Render(" "+m.km.first(actSend)+" save · "+m.km.first(actNormalMode)+" cancel ")
+	} else if r := m.replying; r != nil && in == &m.chatIn {
+		title = editTitle.Render(" ↩ "+r.who+" ") + dimStyle.Render(" "+r.text)
+		title = ansi.Truncate(title, max(0, w-6-lipgloss.Width(m.km.first(actNormalMode))-8), "…") + dimStyle.Render(" · "+m.km.first(actNormalMode)+" cancel ")
 	}
 	if !boxed() {
 		in.SetWidth(max(1, w-4))
@@ -409,7 +412,7 @@ func (m *model) hintList() [][2]string {
 	}
 	switch m.focus {
 	case paneChat:
-		return [][2]string{{k(actDown) + "/" + k(actUp), "messages"}, {k(actOpen), "thread"}, {k(actReact), "react"}, {k(actEdit), "edit"}, {k(actInsert), "write"}, {k(actFilter), "search"}, {k(actHelp), "help"}}
+		return [][2]string{{k(actDown) + "/" + k(actUp), "messages"}, {k(actOpen), m.openHint()}, {k(actReact), "react"}, {k(actEdit), "edit"}, {k(actInsert), "write"}, {k(actFilter), "search"}, {k(actHelp), "help"}}
 	case paneThread:
 		return [][2]string{{k(actDown) + "/" + k(actUp), "messages"}, {k(actInsert), "reply"}, {k(actReact), "react"}, {k(actEdit), "edit"}, {k(actBack), "close"}, {k(actHelp), "help"}}
 	}
@@ -445,4 +448,13 @@ func frame(title string, body []string, width int, focused bool) []string {
 		out = append(out, border.Render("│ ")+fit(line, inner)+border.Render(" │"))
 	}
 	return append(out, border.Render("╰"+strings.Repeat("─", max(0, width-2))+"╯"))
+}
+
+// openHint is what enter does on a message: Telegram replies, Slack opens
+// the thread.
+func (m *model) openHint() string {
+	if _, ok := m.backend.(chat.Replier); ok {
+		return "reply"
+	}
+	return "thread"
 }

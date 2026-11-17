@@ -389,6 +389,33 @@ func (t *Telegram) Send(ctx context.Context, id, rootTS, text string) (Message, 
 	return Message{TS: "0", User: t.Me(), Text: Sanitize(text), At: time.Now()}, nil
 }
 
+// Reply answers message ts in the chat itself, quoting it (not in a thread
+// or a post's comments): what Telegram's apps call reply.
+func (t *Telegram) Reply(ctx context.Context, id, ts, text string) (Message, error) {
+	peer, err := t.inputPeer(id)
+	if err != nil {
+		return Message{}, err
+	}
+	n, err := msgID(ts)
+	if err != nil {
+		return Message{}, err
+	}
+	req := &tg.MessagesSendMessageRequest{Peer: peer, Message: text, RandomID: randomID()}
+	req.SetReplyTo(&tg.InputReplyToMessage{ReplyToMsgID: n})
+	upd, err := t.api.MessagesSendMessage(ctx, req)
+	if err != nil {
+		return Message{}, err
+	}
+	if m, ok := t.fromUpdates(upd); ok {
+		return m, nil
+	}
+	if s, ok := upd.(*tg.UpdateShortSentMessage); ok {
+		return Message{TS: strconv.Itoa(s.ID), User: t.Me(), UserID: "u" + strconv.FormatInt(t.self.ID, 10),
+			Text: Sanitize(text), At: time.Unix(int64(s.Date), 0)}, nil
+	}
+	return Message{TS: "0", User: t.Me(), Text: Sanitize(text), At: time.Now()}, nil
+}
+
 func (t *Telegram) isBroadcast(id string) bool {
 	k, n, err := splitConv(id)
 	if err != nil || k != 'c' {

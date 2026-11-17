@@ -106,6 +106,7 @@ func (m *model) selectConv(i int) tea.Cmd {
 		m.view = sideConv
 	case i != m.cursor:
 		m.cancelEdit()
+		m.replying = nil
 		if c := m.current(); c != nil {
 			m.drafts[c.ID] = m.chatIn.Value()
 			delete(m.newFrom, c.ID) // the New line lasts while you are in it

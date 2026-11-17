@@ -164,14 +164,15 @@ type model struct {
 	// The theme and layout in use: the config's, or what T and L picked.
 	themeName, layoutName string
 
-	convs   []chat.Conversation // channels first, then DMs
-	cursor  int                 // sidebar selection
-	history map[string][]chat.Message
-	cache   *historyCache
-	sel     map[string]int // selected message per conversation
-	chatOff int            // chat lines above the bottom
-	thread  *thread
-	editing *edit
+	convs    []chat.Conversation // channels first, then DMs
+	cursor   int                 // sidebar selection
+	history  map[string][]chat.Message
+	cache    *historyCache
+	sel      map[string]int // selected message per conversation
+	chatOff  int            // chat lines above the bottom
+	thread   *thread
+	editing  *edit
+	replying *replyTo // a Telegram-style reply being written in the chat composer
 
 	// The Threads and Activity views (view != sideConv) and what was read
 	// in them here.

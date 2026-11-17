@@ -115,6 +115,7 @@ func (m *model) insertKey(msg tea.KeyPressMsg, k string) tea.Cmd {
 // normalModeFromInsert is normal_mode in a composer: it cancels an edit
 // (staying in INSERT when the edit started there) or leaves INSERT.
 func (m *model) normalModeFromInsert() tea.Cmd {
+	m.replying = nil
 	if e := m.editing; e != nil {
 		m.cancelEdit()
 		if e.fromInsert {
@@ -154,7 +155,35 @@ func (m *model) submit(in *textarea.Model) tea.Cmd {
 		return m.send(t.convID, t.root, text)
 	}
 	m.drafts[c.ID] = ""
+	if r := m.replying; r != nil && r.convID == c.ID {
+		m.replying = nil
+		if rp, ok := m.backend.(chat.Replier); ok {
+			return m.call(func(ctx context.Context) tea.Msg {
+				msg, err := rp.Reply(ctx, r.convID, r.ts, text)
+				return sentMsg{r.convID, "", msg, err}
+			})
+		}
+	}
 	return m.send(c.ID, "", text)
+}
+
+// replyTo is the message a reply being written answers.
+type replyTo struct {
+	convID, ts, who, text string
+}
+
+// startReply writes a reply to msg in the chat composer, Telegram style:
+// it is posted in the chat, quoting msg.
+func (m *model) startReply(msg *chat.Message) tea.Cmd {
+	c := m.current()
+	if msg == nil || c == nil {
+		return m.enterInsert()
+	}
+	m.cancelEdit()
+	text := strings.Join(strings.Fields(cmp.Or(msg.Text, "a message")), " ")
+	m.replying = &replyTo{convID: c.ID, ts: msg.TS, who: msg.User, text: text}
+	m.focus = paneChat
+	return m.enterInsert()
 }
 
 // startEdit loads one of the user's messages into the composer of the pane
@@ -234,6 +263,12 @@ func (m *model) normalKey(k string) tea.Cmd {
 }
 
 func (m *model) paneAction(a action) tea.Cmd {
+	if a == actThread {
+		if m.focus == paneChat && m.view == sideConv {
+			return m.openThread()
+		}
+		a = actOpen // elsewhere it opens as enter does
+	}
 	if n := accountOf(a); n > 0 {
 		return func() tea.Msg { return tabMsg{index: n} }
 	}
@@ -339,6 +374,9 @@ func (m *model) paneAction(a action) tea.Cmd {
 			}
 			m.focus = paneChat // Update reads it
 		case paneChat:
+			if _, ok := m.backend.(chat.Replier); ok {
+				return m.startReply(m.selectedMsg())
+			}
 			return m.openThread()
 		}
 	case actReply:

@@ -4,7 +4,8 @@ Every binding lives in one table and can be changed in the config file (see [con
 `sltty keys` prints them all as a config file to start from; `?` shows them as configured.
 
 Highlights: `j/k` move everywhere (chats, messages, thread, the lists of
-`ctrl+k` / `ctrl+f` / `r` / `T`), `h/l` panes, `enter` opens a thread, `R`
+`ctrl+k` / `ctrl+f` / `r` / `T`), `h/l` panes, `enter` opens a thread (on Telegram it
+replies to the message, quoting it in the chat; `t` opens its thread), `R`
 shows who reacted (tabs by emoji), `r` reacts (the usual few; typing finds any of Slack's
 emoji and the workspace's own, as in slk), `o` lists the message's links and opens one with a hint key (`a s d f…`
 or `1`-`9`, no mouse needed; it uses `open` / `xdg-open`), `v` opens the message's picture
@@ -77,7 +78,8 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | Move around | NORMAL | `next_match` | `n` | next search result (older) |
 | Move around | NORMAL | `prev_match` | `N` | previous search result |
 | Move around | NORMAL | `toggle_section` | `space`, `z a` | fold / unfold the sidebar section |
-| Messages | NORMAL | `open` | `enter`, `t` | open the chat / the thread |
+| Messages | NORMAL | `open` | `enter` | open the chat / the thread (Telegram: reply to the message) |
+| Messages | NORMAL | `thread` | `t` | open the thread (Telegram: its replies, a post's comments) |
 | Messages | NORMAL | `reply` | — | reply in the thread |
 | Messages | NORMAL | `react` | `r` | add or remove a reaction |
 | Messages | NORMAL | `reactions` | `R` | show who reacted |
@@ -109,6 +111,9 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | Layout | NORMAL | `composer_shorter` | `-` | shorter composer |
 | Layout | NORMAL | `back_or_quit` | `q`, `ctrl+c` | back step by step, then quit |
 | Layout | NORMAL | `quit` | — | quit from anywhere (asks first) |
+| Accounts | NORMAL | `next_account` | `g t` | next account tab |
+| Accounts | NORMAL | `previous_account` | `g T` | previous account tab |
+| Accounts | NORMAL | `account_1` … `account_9` | `1` … `9`, `alt+1` … `alt+9` | account tab 1 … 9 (`alt+` also while writing) |
 
 `—` means the action is configurable and therefore appears in `sltty keys`,
 but has no default key.

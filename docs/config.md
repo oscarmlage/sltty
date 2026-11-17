@@ -73,6 +73,9 @@ backend call fails.
 Threads (threads you are in, with unread replies) and Activity (mentions,
 replies, reactions to your messages) sit on top; `j/k` walks into them like
 any chat, `enter` opens a thread on the right or jumps to the message.
+On Telegram, `enter` on a message replies to it as Telegram's apps do: the
+composer says whom it answers (`esc` drops it) and the reply goes to the
+chat, quoting the message; `t` opens its thread (replies, a post's comments).
 Private channels show 🔒 (`private_icon` changes it, e.g. `◆`). Custom
 sections come from the config, above Channels and Direct messages:
 
