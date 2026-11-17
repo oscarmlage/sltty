@@ -255,6 +255,8 @@ type model struct {
 	chatIn, threadIn textarea.Model
 	drafts           map[string]string       // unsent text per conversation or thread
 	attach           map[string]*chat.Upload // a file to send with the next message, per conversation or thread
+	mentions         map[string][]mentionRef // the mentions picked into each composer
+	suggest          *suggest                // the people to mention, while "@name" is being typed
 
 	width, height int
 	status, err   string
@@ -308,6 +310,7 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		sel:          map[string]int{},
 		drafts:       map[string]string{},
 		attach:       map[string]*chat.Upload{},
+		mentions:     map[string][]mentionRef{},
 		readThreads:  map[string]int{},
 		readActivity: map[string]bool{},
 		unreadThread: map[string]bool{},
@@ -749,6 +752,11 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case clipboardMsg:
 		return m, m.gotClipboard(msg)
+	case suggestTick:
+		return m, m.askPeople(msg)
+	case peopleMsg:
+		m.gotPeople(msg)
+		return m, nil
 	}
 	// Anything else (the cursor blink) goes to whatever is being typed in.
 	var cmd tea.Cmd

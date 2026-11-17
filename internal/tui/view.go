@@ -270,6 +270,7 @@ func (m *model) chatPane(w, rows int) []string {
 		out = append(out, fit("", w))
 	}
 	m.layout.composerTop = len(out)
+	out = overSuggest(out, m.suggestLines(&m.chatIn, w), paneTop)
 	return append(out, m.composer(&m.chatIn, w)...)
 }
 
@@ -348,6 +349,7 @@ func (m *model) threadPane(w, rows int) []string {
 	for len(out) < paneTop+n {
 		out = append(out, fit("", w))
 	}
+	out = overSuggest(out, m.suggestLines(&m.threadIn, w), paneTop)
 	return append(out, m.composer(&m.threadIn, w)...)
 }
 
@@ -503,4 +505,15 @@ func (m *model) openHint() string {
 		return "reply"
 	}
 	return "thread"
+}
+
+// overSuggest draws the mention list over the last lines above a composer,
+// below the pane's header (top lines).
+func overSuggest(out, list []string, top int) []string {
+	if len(list) == 0 {
+		return out
+	}
+	list = list[max(0, len(list)-(len(out)-top)):]
+	copy(out[len(out)-len(list):], list)
+	return out
 }

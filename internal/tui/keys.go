@@ -66,6 +66,7 @@ func (m *model) enterInsert() tea.Cmd {
 }
 
 func (m *model) leaveInsert() {
+	m.suggest = nil
 	m.mode = normal
 	m.chatIn.Blur()
 	m.threadIn.Blur()
@@ -91,6 +92,9 @@ func backspace() tea.KeyPressMsg { return tea.KeyPressMsg{Code: tea.KeyBackspace
 
 func (m *model) insertKey(msg tea.KeyPressMsg, k string) tea.Cmd {
 	in := m.activeInput()
+	if cmd, ok := m.suggestKey(in, k); ok {
+		return cmd
+	}
 	undo := func() { *in, _ = in.Update(backspace()) }
 	if m.typedSequence(scInsert, k, actNormalMode, undo) {
 		return m.normalModeFromInsert()
@@ -115,7 +119,7 @@ func (m *model) insertKey(msg tea.KeyPressMsg, k string) tea.Cmd {
 	}
 	var cmd tea.Cmd
 	*in, cmd = in.Update(msg)
-	return cmd
+	return tea.Batch(cmd, m.updateSuggest(in))
 }
 
 // normalModeFromInsert is normal_mode in a composer: it cancels an edit
@@ -134,7 +138,8 @@ func (m *model) normalModeFromInsert() tea.Cmd {
 
 // submit is send: it posts the composer's text, or saves the edit.
 func (m *model) submit(in *textarea.Model) tea.Cmd {
-	text := strings.TrimSpace(in.Value())
+	text := m.encodeMentions(m.attachKey(in), strings.TrimSpace(in.Value()))
+	m.suggest = nil
 	c := m.current()
 	if c == nil {
 		return nil
@@ -223,7 +228,7 @@ func (m *model) startEdit(msg *chat.Message, fromInsert bool) tea.Cmd {
 	cmd := m.enterInsert()
 	in := m.activeInput()
 	m.editing = &edit{convID: m.convID(), ts: msg.TS, draft: in.Value(), fromInsert: fromInsert}
-	in.SetValue(cmp.Or(msg.Raw, msg.Text)) // the markup: mentions stay mentions
+	in.SetValue(m.decodeMentions(m.attachKey(in), cmp.Or(msg.Raw, msg.Text))) // the markup: mentions stay mentions
 	return cmd
 }
 

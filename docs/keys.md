@@ -20,6 +20,14 @@ does, and it shows so on every device until read; on Slack it is local to
 sltty (Slack's API cannot move the read cursor back), `ctrl+f` search,
 `/` find (chats from the sidebar, messages elsewhere), `i` INSERT.
 
+Mentions: `@` and a few letters while writing list whom to mention, the
+conversation's people first, then (as you keep typing) Slack's directory or
+Telegram's members and contacts; `tab` or `enter` picks, `ctrl+n`/`ctrl+p`
+or the arrows move, `esc` closes the list. A picked mention reads `@name`
+and is sent as a real one: it notifies (on Telegram, `@username`, or the
+name linked to the person when they have none). Editing a message keeps its
+mentions. An `@name` typed without picking it is plain text.
+
 Files: drop one on the terminal (Ghostty, kitty, iTerm2 and WezTerm paste
 its path) or `ctrl+v` while writing (a picture in the clipboard, a
 screenshot, or a file copied in the Finder; with neither it pastes the
