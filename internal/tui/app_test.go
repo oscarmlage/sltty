@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -242,5 +243,35 @@ func TestSingleAccountHasNoBar(t *testing.T) {
 	drive(a, a.Init()())
 	if a.bar() != 0 || a.tabs[0].height != 20 {
 		t.Fatal("a single account must use the whole screen")
+	}
+}
+
+func TestAccountKeysAreConfigurable(t *testing.T) {
+	km, err := newKeymap(map[string][]string{"account_2": {"ctrl+t"}, "next_account": {"g n"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := newTestApp(t)
+	for _, m := range a.tabs {
+		m.km = km
+	}
+	drive(a, tea.KeyPressMsg{Code: '2', Text: "2"})
+	if a.active != 0 {
+		t.Fatal("2 still opens the tab after rebinding it")
+	}
+	drive(a, tea.KeyPressMsg{Code: 'i', Text: "i"}) // ctrl+ works while writing
+	drive(a, tea.KeyPressMsg{Code: 't', Mod: tea.ModCtrl})
+	if a.active != 1 {
+		t.Fatal("ctrl+t did not open the second account")
+	}
+	drive(a, tea.KeyPressMsg{Code: tea.KeyEscape})
+	drive(a, tea.KeyPressMsg{Code: 'g', Text: "g"})
+	drive(a, tea.KeyPressMsg{Code: 'n', Text: "n"})
+	if a.active != 0 {
+		t.Fatal("g n did not cycle")
+	}
+	groups, rows := km.helpGroups()
+	if !slices.Contains(groups, "Accounts") || len(rows["Accounts"]) != 11 {
+		t.Fatalf("help: %v, %d account rows", groups, len(rows["Accounts"]))
 	}
 }

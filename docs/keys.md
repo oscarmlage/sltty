@@ -26,9 +26,13 @@ Slack's `in:#channel` / `in:@person` and `from:@person`, highlights the words
 and shows the time on the right. A click picks, the wheel scrolls, a click
 outside closes.
 
-Accounts (with Slack and Telegram signed in): `1`…`9` open that tab (`alt+1`…
-`alt+9` also while writing),
-`g t` / `g T` the next / previous one; a click on a tab opens it.
+Accounts (with Slack and Telegram signed in; `?` lists them under
+*Accounts*): `1`…`9` open that tab in NORMAL mode and `alt+1`…`alt+9` from
+anywhere, even while writing (actions `account_1`…`account_9`),
+`g t` / `g T` the next / previous one (`next_account`, `previous_account`);
+a click on a tab opens it. Bindings with `alt+` or `ctrl+` work while
+writing or with a list open; plain keys only in NORMAL mode with nothing
+open over the panes (there `1`…`9` still pick links in `o`'s list).
 
 Leaving INSERT without `esc` (iPad): `ctrl+c`, `ctrl+[` (it is esc to the
 terminal) or typing `jk`. New line: `shift+enter` (terminals with the kitty

@@ -142,21 +142,24 @@ func (a *app) broadcast(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-// tabKey is 1…9 in NORMAL mode with nothing open over the panes (a list,
-// a sheet, the command line take their own keys), and alt+1…9 from any
-// mode: that tab.
+// tabKey is a key bound to an account tab (account_1…9: 1…9 and alt+1…9
+// by default). In NORMAL mode with nothing open over the panes any of them
+// opens the tab; elsewhere (writing, a list, a sheet) only the ones with a
+// modifier do, since plain keys are text or the list's own there.
 func (a *app) tabKey(k tea.KeyPressMsg) (tabMsg, bool) {
 	if len(a.tabs) < 2 {
 		return tabMsg{}, false
 	}
+	m := a.cur()
 	s := k.String()
-	switch {
-	case len(s) == 1 && s[0] >= '1' && s[0] <= '9' && a.cur().idle():
-		return tabMsg{index: int(s[0] - '0')}, true
-	case len(s) == 5 && strings.HasPrefix(s, "alt+") && s[4] >= '1' && s[4] <= '9':
-		return tabMsg{index: int(s[4] - '0')}, true
+	n := accountOf(m.km.lookup[scNormal][s])
+	if n == 0 {
+		return tabMsg{}, false
 	}
-	return tabMsg{}, false
+	if !m.idle() && !strings.Contains(s, "alt+") && !strings.Contains(s, "ctrl+") {
+		return tabMsg{}, false
+	}
+	return tabMsg{index: n}, true
 }
 
 // idle is NORMAL mode with only the panes on screen and no key sequence

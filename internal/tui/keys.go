@@ -234,6 +234,9 @@ func (m *model) normalKey(k string) tea.Cmd {
 }
 
 func (m *model) paneAction(a action) tea.Cmd {
+	if n := accountOf(a); n > 0 {
+		return func() tea.Msg { return tabMsg{index: n} }
+	}
 	if m.view != sideConv && m.focus == paneChat {
 		if cmd, done := m.listAction(a); done {
 			return cmd

@@ -103,8 +103,6 @@ var defaults = []binding{
 	{actNextMatch, scNormal, "Move around", "next search result (older)", []string{"n"}},
 	{actPrevMatch, scNormal, "Move around", "previous search result", []string{"N"}},
 	{actFold, scNormal, "Move around", "fold / unfold the sidebar section", []string{"space", "z a"}},
-	{actNextTab, scNormal, "Move around", "next account tab (1…9, or alt+1…9 anywhere, picks one)", []string{"g t"}},
-	{actPrevTab, scNormal, "Move around", "previous account tab", []string{"g T"}},
 
 	{actOpen, scNormal, "Messages", "open the chat / the thread", []string{"enter", "t"}},
 	{actReply, scNormal, "Messages", "reply in the thread", nil},
@@ -141,6 +139,30 @@ var defaults = []binding{
 	{actShrink, scNormal, "Layout", "shorter composer", []string{"-"}},
 	{actBackOrQuit, scNormal, "Layout", "back step by step, then quit", []string{"q", "ctrl+c"}},
 	{actQuit, scNormal, "Layout", "quit from anywhere (asks first)", []string{}},
+
+	{actNextTab, scNormal, "Accounts", "next account tab", []string{"g t"}},
+	{actPrevTab, scNormal, "Accounts", "previous account tab", []string{"g T"}},
+}
+
+// actAccount is the action that opens tab n (1-9): account_1…account_9.
+func actAccount(n int) action { return action(fmt.Sprintf("account_%d", n)) }
+
+// accountOf is the tab an action opens, or 0.
+func accountOf(a action) int {
+	var n int
+	if _, err := fmt.Sscanf(string(a), "account_%d", &n); err != nil || n < 1 || n > 9 {
+		return 0
+	}
+	return n
+}
+
+func init() {
+	// One action per tab: n in NORMAL mode, alt+n anywhere (no text is
+	// typed with alt).
+	for n := 1; n <= 9; n++ {
+		defaults = append(defaults, binding{actAccount(n), scNormal, "Accounts",
+			fmt.Sprintf("account tab %d", n), []string{fmt.Sprint(n), fmt.Sprintf("alt+%d", n)}})
+	}
 }
 
 // keymap resolves keys to actions, per scope.
