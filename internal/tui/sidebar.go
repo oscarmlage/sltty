@@ -137,13 +137,16 @@ func (m *model) sections() []section {
 
 // unreadSections removes read conversations from the sidebar view only.
 // m.convs stays complete, so the switcher and search always see every chat.
+// The open conversation stays too: reading it (u, or entering it) must not
+// pull the sidebar cursor out from under the user.
 func (m *model) unreadSections(in []section) []section {
 	if !m.unreadOnly {
 		return in
 	}
+	open := m.openConv()
 	out := make([]section, 0, len(in))
 	for _, s := range in {
-		s.convs = slices.DeleteFunc(s.convs, func(i int) bool { return m.convs[i].Unread == 0 })
+		s.convs = slices.DeleteFunc(s.convs, func(i int) bool { return m.convs[i].Unread == 0 && i != open })
 		if len(s.convs) > 0 {
 			out = append(out, s)
 		}

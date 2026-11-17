@@ -65,7 +65,7 @@ func TestUnreadOnlySidebarKeepsSwitcherComplete(t *testing.T) {
 		t.Fatal("U did not enable unread-only sidebar")
 	}
 	for _, it := range m.sideOrder() {
-		if it.kind == sideConv && m.convs[it.conv].Unread == 0 {
+		if it.kind == sideConv && m.convs[it.conv].Unread == 0 && it.conv != m.openConv() {
 			t.Fatalf("read chat %q in unread-only sidebar", m.convs[it.conv].Name)
 		}
 	}
@@ -75,6 +75,26 @@ func TestUnreadOnlySidebarKeepsSwitcherComplete(t *testing.T) {
 	}
 	if !slices.ContainsFunc(m.picker.items, func(it pickItem) bool { return it.conv >= 0 && m.convs[it.conv].Name == "general" }) {
 		t.Fatal("switcher hid a read chat")
+	}
+}
+
+func TestUnreadOnlyKeepsTheOpenChatWhenRead(t *testing.T) {
+	m := newTest(t)
+	m.goTo(t, "tools-team")
+	press(m, "U", "u")
+	if c := m.current(); c.Name != "tools-team" || c.Unread != 0 {
+		t.Fatalf("u: on %q with %d unread", c.Name, c.Unread)
+	}
+	if !slices.Contains(m.sideOrder(), sideItem{kind: sideConv, conv: m.cursor}) {
+		t.Fatal("the chat just read left the sidebar")
+	}
+	before := m.cursor
+	press(m, "j")
+	if m.view != sideConv || m.cursor == before || m.current().Unread == 0 {
+		t.Fatalf("j from the read chat went to %q (view %v)", m.current().Name, m.view)
+	}
+	if slices.Contains(m.sideOrder(), sideItem{kind: sideConv, conv: before}) {
+		t.Fatal("a read chat left behind should drop out of the unread sidebar")
 	}
 }
 
