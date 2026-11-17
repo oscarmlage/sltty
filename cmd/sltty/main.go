@@ -162,7 +162,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		Keys: cfg.Keys, Theme: cfg.Theme, Layout: cfg.Layout, Clock: cfg.Clock, Themes: cfg.Themes, Sections: sections, PrivateIcon: cfg.PrivateIcon,
 		Version: version, Images: cfg.Images, CustomEmoji: cfg.CustomEmoji == nil || *cfg.CustomEmoji, ImageWidth: cfg.ImageWidth, ImageHeight: cfg.ImageHeight,
 		ComposerHeight: cfg.ComposerHeight, SidebarWidth: cfg.SidebarWidth, HistoryCacheTTL: time.Duration(cfg.HistoryCacheTTL) * time.Minute,
-		ConfigPath: *cfgPath, ConfigFound: found, LogPath: diag.Path(), StatePath: uistate.Path(),
+		PollInterval: time.Duration(cfg.PollSeconds) * time.Second,
+		ConfigPath:   *cfgPath, ConfigFound: found, LogPath: diag.Path(), StatePath: uistate.Path(),
 	})
 }
 

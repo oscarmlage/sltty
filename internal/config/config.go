@@ -44,6 +44,9 @@ type Config struct {
 	SidebarWidth   int `json:"sidebar_width,omitempty"`
 	// HistoryCacheTTL is the local history cache lifetime in minutes; 0 disables it.
 	HistoryCacheTTL int `json:"history_cache_ttl,omitempty"`
+	// PollSeconds is how often Slack is asked for new messages (it has no
+	// live connection here): 0 for the default (20), -1 for never.
+	PollSeconds int `json:"poll_seconds,omitempty"`
 	// Accounts are the services to open, one tab each, in this order:
 	// "slack", "telegram". Empty: every service with a saved session.
 	Accounts []string `json:"accounts,omitempty"`
@@ -111,5 +114,6 @@ var Reference = []Field{
 	{"image_height", "int", "14", "the tallest picture, in cells"},
 	{"composer_height", "int", "2", "text rows of a composer (+/- and dragging change it)"},
 	{"sidebar_width", "int", "26", "sidebar columns (</> and dragging change it)"},
+	{"poll_seconds", "int", "20", "how often Slack is checked for new messages and unread counts; -1 never"},
 	{"history_cache_ttl", "int", "0", "local history cache lifetime in minutes; 0 disables it"},
 }

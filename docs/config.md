@@ -97,6 +97,17 @@ patterns only sets whether that built-in section starts folded.
 
 ## Messages
 
+## New messages
+
+Telegram pushes them as they happen. Slack has no live connection here, so
+sltty asks it every 20 seconds (`"poll_seconds"` in the config; `-1` never)
+for the unread counts, in one cheap call: the sidebar and the tab badges
+follow, the open conversation and thread load their new messages (read at
+once if you are in them), and any other conversation with new ones is
+fetched afresh when opened. Threads and Activity refresh every minute, and
+a conversation that just appeared (a new DM) joins the sidebar. What you
+read or mark unread in sltty is not undone by a poll.
+
 `history_cache_ttl` is an opt-in local cache of the last 100 messages opened
 in each channel. It is in minutes (`0` disables it); expired entries are deleted.
 The Settings panel can toggle it and choose its lifetime. Cached messages live

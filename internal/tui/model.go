@@ -133,6 +133,9 @@ type Options struct {
 	SidebarWidth   int // columns; 0 for the default
 	// HistoryCacheTTL is the on-disk history cache lifetime; 0 disables it.
 	HistoryCacheTTL time.Duration
+	// PollInterval is how often a backend without live updates (Slack) is
+	// asked for new messages: 0 for the default, negative for never.
+	PollInterval time.Duration
 	// ReadOnEnter marks a conversation read when its messages receive focus.
 	ReadOnEnter *bool
 
@@ -198,6 +201,9 @@ type model struct {
 	cmdHist     int  // the entry up/down are on, -1 for none
 	away        bool // presence
 	readOnEnter bool
+	polls       int                  // polls so far (a backend without live updates)
+	marked      map[string]time.Time // conversation → when its read cursor was last moved here
+	keepUnread  map[string]bool      // marked unread here, which the service cannot keep
 	snoozeTill  time.Time
 	connected   bool // the last backend reply worked
 	replied     bool // there was one
@@ -284,6 +290,8 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		history:      map[string][]chat.Message{},
 		cache:        newHistoryCache(b.Workspace(), opts.HistoryCacheTTL),
 		typing:       map[string]map[string]typist{},
+		marked:       map[string]time.Time{},
+		keepUnread:   map[string]bool{},
 		sel:          map[string]int{},
 		drafts:       map[string]string{},
 		readThreads:  map[string]int{},
@@ -319,7 +327,7 @@ func (m *model) Init() tea.Cmd {
 	return tea.Batch(m.call(func(ctx context.Context) tea.Msg {
 		c, err := m.backend.Conversations(ctx)
 		return convsMsg{c, err}
-	}), m.loadPresence(), m.loadThreads(), m.loadActivity(), m.startSpinner(), graphemeWidthCmd(os.Getenv), waitEvent(m.events))
+	}), m.loadPresence(), m.loadThreads(), m.loadActivity(), m.startSpinner(), graphemeWidthCmd(os.Getenv), waitEvent(m.events), m.schedulePoll())
 }
 
 // graphemeWidthCmd makes the renderer measure text as the layout does.
@@ -572,6 +580,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// The cached view is immediate; the backend refreshes it after.
 		return m, m.loadHistorySoon(msg.id)
+	case pollTick:
+		return m, m.poll()
+	case countsMsg:
+		return m, m.gotCounts(msg)
+	case convsRefreshMsg:
+		m.gotConvsRefresh(msg)
+		return m, nil
 	case loadSoonMsg:
 		if c := m.current(); c != nil && c.ID == msg.id {
 			if _, ok := m.history[msg.id]; !ok || m.cache != nil {
@@ -590,12 +605,25 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err.Error()
 			return m, nil
 		}
+		// A history loaded again (a poll, the cache's refresh) keeps the
+		// selected message, or the newest when it was on the newest.
+		if old, ok := m.history[msg.id]; ok && len(old) > 0 {
+			if i, set := m.sel[msg.id]; set && i < len(old)-1 {
+				ts := old[i].TS
+				if j := slices.IndexFunc(msg.msgs, func(x chat.Message) bool { return x.TS == ts }); j >= 0 {
+					m.sel[msg.id] = j
+				}
+			} else {
+				delete(m.sel, msg.id)
+			}
+		}
 		m.history[msg.id] = msg.msgs
 		if msg.id == m.restoreConv {
 			if i := slices.IndexFunc(msg.msgs, func(x chat.Message) bool { return x.TS == m.restoreTS }); i >= 0 {
 				m.sel[msg.id] = i
 			}
 			m.chatOff = m.restoreOff
+			m.restoreConv = "" // once: later loads keep what the user selects
 		}
 		if c, ok := m.convByID(msg.id); ok {
 			m.noteNew(msg.id, c.Unread)
@@ -614,7 +642,15 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if t := m.thread; t != nil && t.convID == msg.id && t.root == msg.root {
-			t.msgs, t.sel = msg.msgs, len(msg.msgs)-1
+			// Loaded again (a poll): the selection stays unless it was on
+			// the newest reply.
+			follow := t.msgs == nil || t.sel >= len(t.msgs)-1
+			sel := t.sel
+			t.msgs = msg.msgs
+			t.sel = min(sel, len(msg.msgs)-1)
+			if follow {
+				t.sel = len(msg.msgs) - 1
+			}
 			if j := m.jump; j != nil && j.root == msg.root {
 				t.sel = max(0, slices.IndexFunc(t.msgs, func(x chat.Message) bool { return x.TS == j.ts }))
 				m.jump = nil

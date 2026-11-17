@@ -287,6 +287,11 @@ func applyNativeSections(convs []Conversation, sections []nativeSection) []Conve
 	}
 	return out
 }
+
+// UnreadCounts is every conversation's unread count (client.counts): what
+// the TUI polls, Slack having no live connection here.
+func (s *Slack) UnreadCounts(ctx context.Context) (map[string]int, error) { return s.unreadCounts(ctx) }
+
 func (s *Slack) unreadCounts(ctx context.Context) (map[string]int, error) {
 	var r struct {
 		Channels []struct {

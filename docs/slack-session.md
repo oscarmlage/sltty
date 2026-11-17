@@ -49,6 +49,13 @@ It reads nothing else and sends nothing anywhere except Slack's API. Because
 it reads another application's credentials, only use it for your own account,
 and read the code (`internal/chat/session_desktop_darwin.go`) before you run it.
 
+## Requests while it runs
+
+There is no socket connection: every 20 seconds (`poll_seconds`) sltty asks
+`client.counts` for the unread counts, and `conversations.history` /
+`conversations.replies` for the open conversation and thread when they have
+new messages. Threads and Activity are refreshed every minute.
+
 ## Where the session lives
 
 `slack-session.json` in the platform config directory (on macOS

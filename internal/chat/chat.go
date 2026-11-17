@@ -230,6 +230,12 @@ type UnreadMarker interface {
 	MarkUnread(ctx context.Context, convID string, unread bool) error
 }
 
+// Counter is a Backend without live updates that can tell every
+// conversation's unread count in one cheap call, to poll (Slack).
+type Counter interface {
+	UnreadCounts(ctx context.Context) (map[string]int, error)
+}
+
 // Replier is a Backend whose replies quote a message in the conversation
 // itself (Telegram's reply), besides threads: Reply posts text answering ts.
 type Replier interface {

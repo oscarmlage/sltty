@@ -129,6 +129,7 @@ func (m *model) toggleRead() tea.Cmd {
 			return nil
 		}
 		if c.Unread > 0 {
+			delete(m.keepUnread, c.ID)
 			m.status = "marked read"
 			return m.readTo(c.ID, msgs[len(msgs)-1].TS)
 		}
@@ -150,6 +151,7 @@ func (m *model) toggleRead() tea.Cmd {
 			ts = msgs[from-1].TS
 		}
 		m.status = "marked unread"
+		m.keepUnread[c.ID] = true
 		return m.readTo(c.ID, ts)
 	}
 	return nil
@@ -188,6 +190,7 @@ func (m *model) readIn(id string) tea.Cmd {
 		return nil
 	}
 	m.setUnread(id, 0)
+	delete(m.keepUnread, id)
 	return m.mark(id, h[len(h)-1].TS)
 }
 
@@ -233,6 +236,7 @@ func (m *model) entered(before spot) tea.Cmd {
 }
 
 func (m *model) mark(id, ts string) tea.Cmd {
+	m.marked[id] = m.now()
 	return m.call(func(ctx context.Context) tea.Msg {
 		return markedMsg{id, m.backend.Mark(ctx, id, ts)}
 	})
