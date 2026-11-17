@@ -35,7 +35,7 @@ aside): the active tab filled with its theme's main color, the others in
 their own sidebar color. `1`…`9` open a tab (`alt+1`…`alt+9` also while writing), `g t` / `g T` go to the
 next / previous one, and a click on a tab opens it. They are keybindings like
 any other (`account_1`…`account_9`, `next_account`, `previous_account`), e.g.
-`"keys": { "account_1": ["F1"], "account_2": ["F2"] }`. Accounts in the
+`"keys": { "account_1": ["f1"], "account_2": ["f2"] }`. Accounts in the
 background keep working: Telegram's live updates and every unread count
 stay current.
 
