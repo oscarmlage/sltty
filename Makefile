@@ -12,7 +12,7 @@ PREFIX   ?= $(HOME)/.local
 
 
 .DEFAULT_GOAL := help
-.PHONY: help build run demo test cover cover-html fmt vet check install clean
+.PHONY: help build run demo test cover cover-html fmt vet check install dist clean
 
 help: ## list targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -50,6 +50,9 @@ install: ## install bin/sltty into $(PREFIX)/bin (default ~/.local/bin)
 	install -d $(PREFIX)/bin
 	install -m 0755 $(BIN_DIR)/$(BINARY) $(PREFIX)/bin/$(BINARY)
 
+dist: ## release archives of every platform into dist/ (what the release workflow publishes)
+	scripts/dist.sh $(VERSION)
+
 clean: ## remove build output
-	rm -rf $(BIN_DIR) coverage.out
+	rm -rf $(BIN_DIR) dist coverage.out
 

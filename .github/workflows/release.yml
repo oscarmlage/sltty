@@ -1,0 +1,78 @@
+name: release
+
+# Every push to main whose ci passes becomes a GitHub release: the next
+# vX.Y.Z (a patch; "[minor]" or "[major]" in a commit message bumps more,
+# "[skip release]" in the last one skips it), with archives for macOS,
+# Linux and Windows, SHA256SUMS and notes from the commits since the last.
+# Also by hand from the Actions tab (workflow_dispatch).
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write # the tag and the release
+
+concurrency:
+  group: release # one at a time: each takes the tag after the last
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+          fetch-depth: 0 # the tags and the commits since the last one
+
+      - name: next version
+        id: version
+        run: |
+          tag=$(scripts/next-version.sh "$SHA")
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [[ -z $tag ]]; then
+            echo "Nothing to release: $SHA is released already or asks [skip release]." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Releasing **$tag** from \`$SHA\`." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-go@v5
+        if: steps.version.outputs.tag != ''
+        with:
+          go-version-file: go.mod
+
+      - name: build the archives
+        if: steps.version.outputs.tag != ''
+        env:
+          # The Telegram app sltty signs in as; without these secrets the
+          # binaries have none built in (see internal/chat/telegram_app.go).
+          SLTTY_TELEGRAM_API_ID: ${{ secrets.SLTTY_TELEGRAM_API_ID }}
+          SLTTY_TELEGRAM_API_HASH: ${{ secrets.SLTTY_TELEGRAM_API_HASH }}
+        run: scripts/dist.sh "${{ steps.version.outputs.tag }}"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.version.outputs.tag != ''
+        with:
+          name: sltty-${{ steps.version.outputs.tag }}
+          path: dist/*
+
+      - name: publish the release
+        if: steps.version.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" dist/* \
+            --target "$SHA" \
+            --title "sltty $TAG" \
+            --generate-notes
+          echo "https://github.com/${{ github.repository }}/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"

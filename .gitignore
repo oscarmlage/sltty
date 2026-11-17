@@ -7,3 +7,4 @@ coverage.out
 slack-session.json
 state.json
 # go fuzz failures are inputs worth reviewing, not committing blindly
+dist/

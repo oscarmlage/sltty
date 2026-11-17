@@ -24,7 +24,12 @@ Technologies, LLC. It is not affiliated with Telegram either.
 
 ## Install
 
-Requires Go (the version in [`go.mod`](go.mod)).
+A binary from [the releases](https://github.com/oscarmlage/sltty/releases)
+(macOS, Linux, Windows; check it against `SHA256SUMS`). On macOS a
+downloaded binary is not signed: `xattr -d com.apple.quarantine sltty`
+before the first run.
+
+Or with Go (the version in [`go.mod`](go.mod)):
 
 ```sh
 go install github.com/oscarmlage/sltty/cmd/sltty@latest
@@ -101,7 +106,15 @@ themes, sidebar sections, pictures, command line) are in
 make check     # gofmt, vet, tests (what CI runs)
 make cover     # total coverage (make cover-html for the report)
 make demo      # re-record docs/assets/demo/*.gif (macOS, kitty, ffmpeg; uses -demo only)
+make dist      # the release archives into dist/
 ```
+
+Every push to `main` whose CI passes is released by
+[`release.yml`](.github/workflows/release.yml): the next patch version
+(`[minor]` or `[major]` in a commit message bumps more, `[skip release]` in
+the last one skips it), with the archives of every platform. The secrets
+`SLTTY_TELEGRAM_API_ID` and `SLTTY_TELEGRAM_API_HASH` give the binaries
+their built-in Telegram app.
 
 ## Credits
 
