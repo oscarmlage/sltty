@@ -12,6 +12,10 @@ import (
 // support hyperlinks and opens the URL on click in ones that do.
 var slackToken = regexp.MustCompile(`<([^>|]+)(?:\|([^>]+))?>`)
 var markdownLink = regexp.MustCompile(`\[([^\[\]]+)\]\((https?://[^)[:space:]]+)\)`)
+
+// bareURL is a URL typed as is: Slack sends <url>, which the backend turns
+// into the URL itself, and Telegram text has them plain.
+var bareURL = regexp.MustCompile(`https?://[^\s<>()\[\]\x00]+`)
 var mentionToken = regexp.MustCompile(`(^|[^[:alnum:]_])(@[[:alnum:]_.-]+)`)
 var (
 	boldToken = regexp.MustCompile(`\*([^*\n]+)\*`)
@@ -90,6 +94,12 @@ func slackMrkdwn(s string) string {
 	// The backend resolves <@U…> into @handles. Make those handles visible
 	// again in the terminal, like Slack's highlighted mentions.
 	s = codeToken.ReplaceAllStringFunc(s, func(v string) string { return keep(keyStyle.Render(v[1 : len(v)-1])) })
+	s = bareURL.ReplaceAllStringFunc(s, func(u string) string {
+		// The sentence's punctuation is not the URL's.
+		trail := len(u) - len(strings.TrimRight(u, ".,;:!?'\"*_~"))
+		u, rest := u[:len(u)-trail], u[len(u)-trail:]
+		return keep(linkStyle.Render(osc8(u, shortURL(u)))) + rest
+	})
 	s = mentionToken.ReplaceAllString(s, "$1"+linkStyle.Render("$2"))
 	s = boldToken.ReplaceAllString(s, "\x1b[1m$1\x1b[22m")
 	s = italicToken.ReplaceAllString(s, "$1\x1b[3m$2\x1b[23m$3")
@@ -98,4 +108,23 @@ func slackMrkdwn(s string) string {
 		n, _ := strconv.Atoi(v[1 : len(v)-1])
 		return kept[n]
 	})
+}
+
+// maxURL is the longest URL shown whole; a longer one shows as Slack's own
+// composer labels a pasted link: host/first/…/last. The full URL is the
+// hyperlink, and what o lists and opens.
+const maxURL = 50
+
+func shortURL(u string) string {
+	if len(u) <= maxURL {
+		return u
+	}
+	rest := u[strings.Index(u, "://")+3:]
+	rest, _, _ = strings.Cut(rest, "?")
+	rest, _, _ = strings.Cut(rest, "#")
+	parts := strings.Split(strings.TrimRight(rest, "/"), "/")
+	if len(parts) < 4 {
+		return u
+	}
+	return parts[0] + "/" + parts[1] + "/…/" + parts[len(parts)-1]
 }
