@@ -344,8 +344,10 @@ func (m *model) paneAction(a action) tea.Cmd {
 	case actFocusLeft:
 		m.cycleFocus(-1)
 	case actFocusRight:
-		// Right enters the selected message's thread when the chat is the
-		// rightmost open pane; once it is open, it moves into that pane.
+		m.cycleFocus(1)
+	case actOpenRight:
+		// The right arrow enters the selected message's thread when the chat
+		// is the rightmost open pane; once it is open, it moves into that pane.
 		if m.focus == paneChat && m.thread == nil {
 			return m.openThread()
 		}

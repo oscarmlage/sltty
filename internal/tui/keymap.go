@@ -38,6 +38,7 @@ const (
 	actInsert      action = "insert"
 	actFocusLeft   action = "focus_left"
 	actFocusRight  action = "focus_right"
+	actOpenRight   action = "open_thread_right"
 	actToggleFocus action = "toggle_sidebar_chat"
 	actDown        action = "down"
 	actUp          action = "up"
@@ -91,7 +92,8 @@ type binding struct {
 // defaults, in the help panel's order.
 var defaults = []binding{
 	{actFocusLeft, scNormal, "Move around", "pane on the left", []string{"h", "left", "shift+tab"}},
-	{actFocusRight, scNormal, "Move around", "pane on the right", []string{"l", "right"}},
+	{actFocusRight, scNormal, "Move around", "pane on the right", []string{"l"}},
+	{actOpenRight, scNormal, "Move around", "open selected thread / pane on the right", []string{"right"}},
 	{actToggleFocus, scNormal, "Move around", "sidebar ⇄ chat", []string{"tab"}},
 	{actDown, scNormal, "Move around", "down", []string{"j", "down"}},
 	{actUp, scNormal, "Move around", "up", []string{"k", "up"}},
