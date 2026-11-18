@@ -5,6 +5,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -155,6 +156,7 @@ func RunAccounts(accounts []Account, opts Options) error {
 		if stateErr == nil && opts.StatePath != "" {
 			if saved, ok := state.Workspaces[a.Backend.Workspace()]; ok {
 				m.collapsed, m.unreadOnly = saved.Collapsed, saved.UnreadOnly
+				m.recent = slices.Clone(saved.Recent)
 				m.restoreConv, m.restoreTS, m.restoreOff = saved.Conversation, saved.SelectedTS, saved.ChatOffset
 			}
 		}
@@ -216,7 +218,7 @@ func (m *model) saveUIState() error {
 	s.Workspaces[m.backend.Workspace()] = uistate.Workspace{
 		Theme: m.themeName, Layout: m.layoutName, Clock: clockName(), ImagesOn: &on, CustomEmoji: &emoji,
 		ComposerHeight: m.inputRows, SidebarWidth: m.side, UnreadOnly: m.unreadOnly, HistoryCache: &cacheOn, HistoryCacheTTL: int(m.opts.HistoryCacheTTL / time.Minute), Collapsed: m.collapsed,
-		Conversation: current, SelectedTS: ts, ChatOffset: m.chatOff,
+		Conversation: current, SelectedTS: ts, ChatOffset: m.chatOff, Recent: m.recent,
 	}
 	return uistate.Save(s)
 }

@@ -147,7 +147,8 @@ type Options struct {
 	ConfigPath  string
 	ConfigFound bool
 	LogPath     string
-	StatePath   string // non-empty enables local UI state persistence
+	StatePath   string   // non-empty enables local UI state persistence
+	Recent      []string // conversation IDs, most recently opened first
 }
 
 type model struct {
@@ -176,6 +177,7 @@ type model struct {
 	themeName, layoutName string
 
 	convs    []chat.Conversation // channels first, then DMs
+	recent   []string            // modal's locally-used-first order
 	cursor   int                 // sidebar selection
 	history  map[string][]chat.Message
 	cache    *historyCache
@@ -302,6 +304,7 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		themes:       ts,
 		themeName:    cmpOr(opts.Theme, defaultTheme),
 		layoutName:   opts.Layout,
+		recent:       slices.Clone(opts.Recent),
 		history:      map[string][]chat.Message{},
 		cache:        newHistoryCache(b.Workspace(), opts.HistoryCacheTTL),
 		typing:       map[string]map[string]typist{},

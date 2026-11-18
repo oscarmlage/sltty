@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -257,7 +258,7 @@ func (m *model) refreshPicker() tea.Cmd {
 		case strings.HasPrefix(q, "@"):
 			only, q = int(chat.DM), q[1:]
 		}
-		for _, i := range rank(len(m.convs), func(i int) string { return m.convs[i].Name }, q) {
+		for _, i := range m.switchRank(q) {
 			c := m.convs[i]
 			if only >= 0 && int(c.Kind) != only {
 				continue
@@ -315,6 +316,25 @@ func (m *model) refreshPicker() tea.Cmd {
 		return tea.Tick(searchDebounce, func(time.Time) tea.Msg { return searchTick{q} })
 	}
 	return nil
+}
+
+// switchRank filters the conversations as the switcher always has, then
+// orders equal matches by the user's local most-recently-opened list.
+func (m *model) switchRank(q string) []int {
+	out := rank(len(m.convs), func(i int) string { return m.convs[i].Name }, q)
+	at := make(map[string]int, len(m.recent))
+	for i, id := range m.recent {
+		at[id] = i
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		a, aok := at[m.convs[out[i]].ID]
+		b, bok := at[m.convs[out[j]].ID]
+		if aok != bok {
+			return aok
+		}
+		return a < b
+	})
+	return out
 }
 
 // maxReactItems caps the reactions a few letters find.

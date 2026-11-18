@@ -124,6 +124,7 @@ func (m *model) selectConv(i int) tea.Cmd {
 	}
 	m.cursor, m.chatOff = i, 0
 	c := m.current()
+	m.touchRecent(c.ID)
 	if m.vipNow(i) {
 		m.vipKeep = c.ID // read in there, it stays until left
 	} else {
@@ -139,6 +140,18 @@ func (m *model) selectConv(i int) tea.Cmd {
 		return settle
 	}
 	return tea.Batch(settle, m.loadCachedHistory(c.ID))
+}
+
+// touchRecent keeps the switcher stable across Slack's changing API order.
+func (m *model) touchRecent(id string) {
+	if id == "" {
+		return
+	}
+	m.recent = append([]string{id}, slices.DeleteFunc(m.recent, func(x string) bool { return x == id })...)
+	// Enough history for a useful switcher, without growing state.json forever.
+	if len(m.recent) > 100 {
+		m.recent = m.recent[:100]
+	}
 }
 
 // openThread opens the thread of the selected message (an empty one starts

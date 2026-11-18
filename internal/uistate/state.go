@@ -23,6 +23,7 @@ type Workspace struct {
 	Conversation    string          `json:"conversation,omitempty"`
 	SelectedTS      string          `json:"selected_ts,omitempty"`
 	ChatOffset      int             `json:"chat_offset,omitempty"`
+	Recent          []string        `json:"recent,omitempty"` // conversation IDs, most recently opened first
 }
 type State struct {
 	Workspaces map[string]Workspace `json:"workspaces"`
