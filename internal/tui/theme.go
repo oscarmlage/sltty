@@ -246,8 +246,16 @@ func mix(a, b string, f float64) string {
 	return fmt.Sprintf("#%02x%02x%02x", c(ar, br), c(ag, bg), c(ab, bb))
 }
 
-// bgSeq is the escape sequence for a background color; empty keeps the
-// terminal's.
+// fgSeq and bgSeq are true-colour SGR sequences. An empty colour leaves the
+// terminal's own setting alone.
+func fgSeq(hex string) string {
+	if hex == "" {
+		return ""
+	}
+	r, g, b := rgb(hex)
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", r, g, b)
+}
+
 func bgSeq(hex string) string {
 	if hex == "" {
 		return ""

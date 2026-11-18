@@ -4,6 +4,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"slices"
 	"strings"
@@ -11,6 +12,26 @@ import (
 
 	"github.com/oscarmlage/sltty/internal/diag"
 )
+
+// OpenDM opens (or returns) the direct-message conversation with personID.
+func (s *Slack) OpenDM(ctx context.Context, personID string) (Conversation, error) {
+	var r struct {
+		Channel struct {
+			ID     string `json:"id"`
+			User   string `json:"user"`
+			Unread int    `json:"unread_count_display"`
+		} `json:"channel"`
+	}
+	if err := s.call(ctx, "conversations.open", url.Values{"users": {personID}}, &r); err != nil {
+		return Conversation{}, err
+	}
+	if r.Channel.ID == "" {
+		return Conversation{}, fmt.Errorf("Slack did not return a direct message")
+	}
+	s.resolveUser(ctx, personID)
+	return Conversation{ID: r.Channel.ID, Name: s.user(personID), Kind: DM, Unread: r.Channel.Unread,
+		VIP: s.vipUsers(ctx)[personID], Self: personID == s.me}, nil
+}
 
 func (s *Slack) Conversations(ctx context.Context) ([]Conversation, error) {
 	vips := s.vipUsers(ctx)

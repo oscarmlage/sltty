@@ -33,12 +33,13 @@ const (
 
 type pickItem struct {
 	label   string
-	right   string   // muted, flush right: unread count, time
-	conv    int      // pickSwitch
-	hit     chat.Hit // pickSearch
-	emoji   string   // pickReact
-	theme   string   // pickTheme
-	minutes int      // pickStatus: -1 active, -2 away, 0 ends DND
+	right   string      // muted, flush right: unread count, time
+	conv    int         // pickSwitch
+	hit     chat.Hit    // pickSearch
+	emoji   string      // pickReact
+	theme   string      // pickTheme
+	minutes int         // pickStatus: -1 active, -2 away, 0 ends DND
+	person  chat.Person // pickSwitch: start a new DM
 }
 
 type picker struct {
@@ -55,6 +56,8 @@ type picker struct {
 	waiting bool   // pickSearch: a query is on its way
 	here    string // pickSearch: the conversation it was opened in
 	scope   string // pickSearch: here, or "" for everywhere
+	people  []chat.Person
+	peopleQ string
 }
 
 // found is a picked search: its results, the one shown and the words.
@@ -71,6 +74,15 @@ const (
 )
 
 type (
+	dmLookupTick struct{ query string }
+	dmPeopleMsg  struct {
+		query  string
+		people []chat.Person
+	}
+	dmOpenedMsg struct {
+		conv chat.Conversation
+		err  error
+	}
 	searchTick struct{ query string }
 	searchMsg  struct {
 		query string
@@ -95,7 +107,7 @@ func (m *model) openPicker(kind pickKind, target *chat.Message) tea.Cmd {
 	var load tea.Cmd
 	switch kind {
 	case pickSwitch:
-		p.title, in.Placeholder = "Switch conversation", "name · #channels only · @people only"
+		p.title, in.Placeholder = "Switch conversation", "name · #channels · @people / start a DM"
 	case pickSearch:
 		p.title, in.Placeholder = "Search messages", "words · in:#channel · from:@person"
 	case pickReact:
@@ -256,6 +268,17 @@ func (m *model) refreshPicker() tea.Cmd {
 			}
 			p.items = append(p.items, it)
 		}
+		if only == int(chat.DM) && q != "" {
+			for _, person := range p.people {
+				if !strings.HasPrefix(strings.ToLower(p.peopleQ), q) || strings.EqualFold(person.Name, m.backend.Me()) {
+					continue
+				}
+				p.items = append(p.items, pickItem{label: "Start chat with " + person.Full, person: person})
+			}
+			if _, ok := m.backend.(chat.DMOpener); ok {
+				return tea.Tick(searchDebounce, func(time.Time) tea.Msg { return dmLookupTick{q} })
+			}
+		}
 	case pickReact:
 		p.items = m.reactItems(q)
 	case pickTheme:
@@ -380,6 +403,13 @@ func (m *model) pick() tea.Cmd {
 		m.setTheme(it.theme, m.layoutName)
 		m.status = `theme ` + it.theme + ` · "theme": "` + it.theme + `" in the config keeps it`
 	case pickSwitch:
+		if it.person.ID != "" {
+			opener := m.backend.(chat.DMOpener)
+			return m.call(func(ctx context.Context) tea.Msg {
+				c, err := opener.OpenDM(ctx, it.person.ID)
+				return dmOpenedMsg{c, err}
+			})
+		}
 		var cmd tea.Cmd
 		switch it.conv {
 		case rowThreads:
@@ -416,4 +446,20 @@ func (m *model) pick() tea.Cmd {
 		return m.jumpToHit(it.hit)
 	}
 	return nil
+}
+
+// lookupDMPeople finds a person outside the already-open DM list.
+func (m *model) lookupDMPeople(query string) tea.Cmd {
+	p := m.picker
+	if p == nil || p.kind != pickSwitch || p.peopleQ == query {
+		return nil
+	}
+	mn, ok := m.backend.(chat.Mentioner)
+	if !ok {
+		return nil
+	}
+	return m.call(func(ctx context.Context) tea.Msg {
+		people, _ := mn.People(ctx, "", query)
+		return dmPeopleMsg{query, people}
+	})
 }

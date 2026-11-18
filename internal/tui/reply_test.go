@@ -70,3 +70,11 @@ func TestEnterOpensTheThreadOnSlack(t *testing.T) {
 		t.Fatal("enter on Slack must open the thread")
 	}
 }
+
+func TestRightOpensTheSelectedThread(t *testing.T) {
+	m := newTest(t)
+	press(m, "l", "right")
+	if m.thread == nil || m.focus != paneThread {
+		t.Fatal("right from the chat must open and focus the selected thread")
+	}
+}

@@ -73,6 +73,17 @@ func TestConvertMessage(t *testing.T) {
 	}
 }
 
+func TestOutgoingMessageWithoutSenderUsesOurAvatar(t *testing.T) {
+	tt := newTestTelegram()
+	// Updates sent by another Telegram client can omit FromID. PeerID names
+	// the recipient, so using it would show their photo beside our message.
+	m := &tg.Message{ID: 11, Out: true, PeerID: &tg.PeerUser{UserID: 2}, Message: "sent elsewhere"}
+	got, ok := tt.convert(m, nil)
+	if !ok || got.User != "Me" || got.UserID != "u1" {
+		t.Fatalf("outgoing message: %+v", got)
+	}
+}
+
 func TestConvertPhoto(t *testing.T) {
 	tt := newTestTelegram()
 	p := &tg.Photo{ID: 7, AccessHash: 70, Sizes: []tg.PhotoSizeClass{

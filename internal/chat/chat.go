@@ -289,6 +289,12 @@ type Mentioner interface {
 	PersonName(id string) (string, bool)
 }
 
+// DMOpener opens (or returns) a direct-message conversation with a person.
+// Slack creates the DM lazily, so it is not otherwise present in Conversations.
+type DMOpener interface {
+	OpenDM(ctx context.Context, personID string) (Conversation, error)
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error

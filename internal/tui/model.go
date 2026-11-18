@@ -738,6 +738,25 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.replaceMsg(msg.id, msg.msg)
 		return m, nil
+	case dmLookupTick:
+		return m, m.lookupDMPeople(msg.query)
+	case dmPeopleMsg:
+		if p := m.picker; p != nil && p.kind == pickSwitch && strings.HasPrefix(strings.ToLower(strings.TrimPrefix(p.input.Value(), "@")), msg.query) {
+			p.people, p.peopleQ = msg.people, msg.query
+			return m, m.refreshPicker()
+		}
+		return m, nil
+	case dmOpenedMsg:
+		if msg.err != nil {
+			m.err = msg.err.Error()
+			return m, nil
+		}
+		if i := slices.IndexFunc(m.convs, func(c chat.Conversation) bool { return c.ID == msg.conv.ID }); i >= 0 {
+			return m, m.selectConv(i)
+		}
+		m.addConv(msg.conv)
+		m.focus = paneChat
+		return m, m.selectConv(slices.IndexFunc(m.convs, func(c chat.Conversation) bool { return c.ID == msg.conv.ID }))
 	case searchTick:
 		return m, m.searchNow(msg.query)
 	case searchMsg:

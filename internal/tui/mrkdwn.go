@@ -101,9 +101,13 @@ func slackMrkdwn(s string) string {
 		return keep(linkStyle.Render(osc8(u, shortURL(u)))) + rest
 	})
 	s = mentionToken.ReplaceAllString(s, "$1"+linkStyle.Render("$2"))
-	s = boldToken.ReplaceAllString(s, "\x1b[1m$1\x1b[22m")
-	s = italicToken.ReplaceAllString(s, "$1\x1b[3m$2\x1b[23m$3")
-	s = strikeToken.ReplaceAllString(s, "\x1b[9m$1\x1b[29m")
+	// Some terminal profiles assign their own colour to bold, italic or
+	// struck-through text. Pin the foreground on either side of each mark so
+	// Markdown formatting cannot leak those profile colours into a theme.
+	textFG := fgSeq(theme.Text)
+	s = boldToken.ReplaceAllString(s, textFG+"\x1b[1m$1\x1b[22m"+textFG)
+	s = italicToken.ReplaceAllString(s, "$1"+textFG+"\x1b[3m$2\x1b[23m"+textFG+"$3")
+	s = strikeToken.ReplaceAllString(s, textFG+"\x1b[9m$1\x1b[29m"+textFG)
 	return keptToken.ReplaceAllStringFunc(s, func(v string) string {
 		n, _ := strconv.Atoi(v[1 : len(v)-1])
 		return kept[n]

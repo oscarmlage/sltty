@@ -49,7 +49,7 @@ func (t *Telegram) convert(m tg.MessageClass, byID map[int]tg.MessageClass) (Mes
 		return Message{
 			TS:     strconv.Itoa(m.ID),
 			User:   t.senderName(m.FromID, m.PeerID, m.Out, ""),
-			UserID: avatarID(m.FromID, m.PeerID),
+			UserID: t.avatarID(m.FromID, m.PeerID, m.Out),
 			Text:   "_" + t.serviceText(m.Action) + "_",
 			At:     time.Unix(int64(m.Date), 0),
 		}, true
@@ -63,7 +63,7 @@ func (t *Telegram) convertMessage(m *tg.Message, byID map[int]tg.MessageClass) M
 	out := Message{
 		TS:     strconv.Itoa(m.ID),
 		User:   t.senderName(m.FromID, m.PeerID, m.Out, m.PostAuthor),
-		UserID: avatarID(m.FromID, m.PeerID),
+		UserID: t.avatarID(m.FromID, m.PeerID, m.Out),
 		Text:   entitiesToMrkdwn(text, m.Entities),
 		At:     time.Unix(int64(m.Date), 0),
 		Edited: m.EditDate != 0 && !m.EditHide,
@@ -139,7 +139,13 @@ func (t *Telegram) senderName(from, peer tg.PeerClass, out bool, author string) 
 	return name
 }
 
-func avatarID(from, peer tg.PeerClass) string {
+// avatarID is the sender's photo. Telegram may omit FromID on an outgoing
+// update received from another client; its PeerID is then the recipient, not
+// us. Out is authoritative in that case.
+func (t *Telegram) avatarID(from, peer tg.PeerClass, out bool) string {
+	if out && t.self != nil {
+		return convID(&tg.PeerUser{UserID: t.self.ID})
+	}
 	if from == nil {
 		from = peer
 	}
