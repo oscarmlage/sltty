@@ -119,6 +119,13 @@ fetched afresh when opened. Threads and Activity refresh every minute, and
 a conversation that just appeared (a new DM) joins the sidebar. What you
 read or mark unread in sltty is not undone by a poll.
 
+The poll's timer does not count the time the machine sleeps, so after
+opening the laptop a poll that comes much later than due (three intervals
+by the wall clock) reloads everything instead: the full sidebar, the open
+conversation and thread, Threads and Activity, and drops the other
+conversations' history so they are fetched again. `ctrl+r` (`refresh`)
+does the same at any moment, for the account on screen, Telegram included.
+
 `history_cache_ttl` is an opt-in local cache of the last 100 messages opened
 in each channel. It is in minutes (`0` disables it); expired entries are deleted.
 The Settings panel can toggle it and choose its lifetime. Cached messages live

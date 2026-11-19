@@ -6,6 +6,11 @@ package tui
 // read, if the user is in it), or is fetched afresh when opened. Threads and
 // Activity are refreshed every few polls, and the sidebar when a
 // conversation it does not have shows up.
+//
+// refresh (ctrl+r) asks for all of it now, for any backend; and a poll that
+// comes much later than due (the laptop slept: the timer does not count
+// that time) does the same, since a whole night of news is more than the
+// unread counts can tell.
 
 import (
 	"context"
@@ -23,6 +28,9 @@ const (
 	markGrace = 15 * time.Second
 	// listsEvery refreshes Threads and Activity every so many polls.
 	listsEvery = 3
+	// wokeAfter is how many intervals late a poll must be to count as a
+	// wake from sleep.
+	wokeAfter = 3
 )
 
 type (
@@ -36,6 +44,9 @@ type (
 	convsRefreshMsg struct {
 		convs []chat.Conversation
 		err   error
+		// counts takes the unread counts from convs too (refresh, on a
+		// backend that has no separate call for them).
+		counts bool
 	}
 )
 
@@ -68,6 +79,14 @@ func (m *model) poll() tea.Cmd {
 	c, ok := m.backend.(chat.Counter)
 	if !ok {
 		return nil
+	}
+	// Wall clock (Round(0) drops the monotonic reading, which stops while
+	// the machine sleeps): a poll far later than due follows a sleep.
+	now := m.now().Round(0)
+	last := m.lastPoll
+	m.lastPoll = now
+	if d := m.pollEvery(); d > 0 && !last.IsZero() && now.Sub(last) > wokeAfter*d {
+		return tea.Batch(m.refresh(), m.schedulePoll())
 	}
 	m.polls++
 	cmds := []tea.Cmd{m.call(func(ctx context.Context) tea.Msg {
@@ -133,7 +152,7 @@ func (m *model) gotCounts(msg countsMsg) tea.Cmd {
 			// A conversation the sidebar does not have (a new DM...).
 			cmds = append(cmds, m.call(func(ctx context.Context) tea.Msg {
 				c, err := m.backend.Conversations(ctx)
-				return convsRefreshMsg{c, err}
+				return convsRefreshMsg{convs: c, err: err}
 			}))
 			break
 		}
@@ -141,17 +160,57 @@ func (m *model) gotCounts(msg countsMsg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m *model) gotConvsRefresh(msg convsRefreshMsg) {
+func (m *model) gotConvsRefresh(msg convsRefreshMsg) tea.Cmd {
 	if msg.err != nil {
-		return
+		return nil
 	}
 	have := map[string]bool{}
 	for _, c := range m.convs {
 		have[c.ID] = true
 	}
+	counts := map[string]int{}
 	for _, c := range msg.convs {
 		if !have[c.ID] {
 			m.addConv(c)
 		}
+		if c.Unread > 0 {
+			counts[c.ID] = c.Unread
+		}
 	}
+	if !msg.counts {
+		return nil
+	}
+	return m.gotCounts(countsMsg{counts: counts})
+}
+
+// refresh loads what the account shows again, now: the sidebar (new
+// conversations and unread counts), the open conversation and thread,
+// Threads and Activity. The other conversations drop their history, so
+// opening one fetches it afresh. It does not touch the poll's schedule.
+func (m *model) refresh() tea.Cmd {
+	c, counter := m.backend.(chat.Counter)
+	cmds := []tea.Cmd{m.call(func(ctx context.Context) tea.Msg {
+		cs, err := m.backend.Conversations(ctx)
+		return convsRefreshMsg{convs: cs, err: err, counts: !counter}
+	}), m.loadThreads(), m.loadActivity()}
+	if counter {
+		cmds = append(cmds, m.call(func(ctx context.Context) tea.Msg {
+			n, err := c.UnreadCounts(ctx)
+			return countsMsg{n, err}
+		}))
+	}
+	open := ""
+	if c := m.current(); c != nil {
+		open = c.ID
+		cmds = append(cmds, m.loadHistory(open))
+	}
+	for id := range m.history {
+		if id != open {
+			delete(m.history, id)
+		}
+	}
+	if t := m.thread; t != nil && t.msgs != nil {
+		cmds = append(cmds, m.loadReplies(t.convID, t.root))
+	}
+	return tea.Batch(cmds...)
 }

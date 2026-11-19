@@ -140,3 +140,73 @@ func applyCounts(m *model, counts map[string]int) {
 		run(m, tea.BatchMsg{cmd})
 	}
 }
+
+func TestRefreshKeyReloadsNow(t *testing.T) {
+	m, c := newPolled(t)
+	open := m.current().ID
+	var other string
+	for _, cv := range m.convs {
+		if cv.ID != open {
+			other = cv.ID
+			break
+		}
+	}
+	m.history[other] = []chat.Message{{TS: "1", Text: "stale"}}
+	c.extra = []chat.Conversation{{ID: "DNEW", Name: "newcomer", Kind: chat.DM, Unread: 1}}
+	c.counts["DNEW"] = 1
+	before := c.histories[open]
+	cmd := m.key(tea.KeyPressMsg{Code: 'r', Mod: tea.ModCtrl})
+	if m.status == "" {
+		t.Fatal("ctrl+r says nothing")
+	}
+	run(m, tea.BatchMsg{cmd})
+	if c.histories[open] != before+1 {
+		t.Fatal("ctrl+r did not reload the open conversation")
+	}
+	if _, ok := m.history[other]; ok {
+		t.Fatal("ctrl+r kept another conversation's old history")
+	}
+	if _, ok := m.convByID("DNEW"); !ok {
+		t.Fatal("ctrl+r did not bring the new conversation")
+	}
+}
+
+func TestRefreshTakesUnreadFromTheListWithoutCounts(t *testing.T) {
+	m := newTest(t) // the plain Fake: no counts call
+	id := m.convs[len(m.convs)-1].ID
+	m.setUnread(id, 0)
+	run(m, convsRefreshMsg{convs: []chat.Conversation{{ID: id, Unread: 4}}, counts: true})
+	if cv, _ := m.convByID(id); cv.Unread != 4 {
+		t.Fatalf("%d unread, want 4", cv.Unread)
+	}
+}
+
+func TestPollAfterSleepRefreshes(t *testing.T) {
+	m, c := newPolled(t)
+	clock := time.Now()
+	m.now = func() time.Time { return clock }
+	open := m.current().ID
+	var other string
+	for _, cv := range m.convs {
+		if cv.ID != open {
+			other = cv.ID
+			break
+		}
+	}
+	m.poll() // the first one sets the clock
+	clock = clock.Add(defaultPoll)
+	m.history[other] = []chat.Message{{TS: "1", Text: "stale"}}
+	m.poll() // on time: just the counts
+	if _, ok := m.history[other]; !ok {
+		t.Fatal("an ordinary poll dropped histories")
+	}
+	clock = clock.Add(8 * time.Hour) // the lid was closed
+	before := c.histories[open]
+	run(m, tea.BatchMsg{m.poll()})
+	if _, ok := m.history[other]; ok {
+		t.Fatal("a poll after a sleep kept the old histories")
+	}
+	if c.histories[open] <= before {
+		t.Fatal("a poll after a sleep did not reload the open conversation")
+	}
+}

@@ -362,6 +362,9 @@ func (m *model) paneAction(a action) tea.Cmd {
 		}
 	case actRedraw:
 		return tea.ClearScreen
+	case actRefresh:
+		m.status = "refreshing…"
+		return m.refresh()
 	case actNextTab:
 		return func() tea.Msg { return tabMsg{delta: 1} }
 	case actPrevTab:

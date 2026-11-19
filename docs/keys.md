@@ -18,7 +18,11 @@ sidebar only previews a chat, `enter`, `l` or a click enters it). On Telegram
 `u` marks the whole chat unread on the server, as Telegram's "Mark as unread"
 does, and it shows so on every device until read; on Slack it is local to
 sltty (Slack's API cannot move the read cursor back), `ctrl+f` search,
-`/` find (chats from the sidebar, messages elsewhere), `i` INSERT.
+`/` find (chats from the sidebar, messages elsewhere), `i` INSERT,
+`ctrl+r` reloads the account on screen now (the sidebar and its unread
+counts, the open chat and thread, Threads and Activity; other chats fetch
+theirs again when opened). Slack is also refreshed this way by itself when
+a poll comes much later than due, as after the laptop slept.
 
 Mentions: `@` and a few letters while writing list whom to mention, the
 conversation's people first, then (as you keep typing) Slack's directory or
@@ -139,6 +143,7 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | Layout | NORMAL | `back_or_quit` | `q`, `ctrl+c` | back step by step, then quit |
 | Layout | NORMAL | `quit` | — | quit from anywhere (asks first) |
 | Layout | NORMAL | `redraw` | `ctrl+l` | repaint the whole screen |
+| Layout | NORMAL | `refresh` | `ctrl+r` | reload this account now: chats, unread, the open chat and thread |
 | Accounts | NORMAL | `next_account` | `g t` | next account tab |
 | Accounts | NORMAL | `previous_account` | `g T` | previous account tab |
 | Accounts | NORMAL | `account_1` … `account_9` | `1` … `9`, `alt+1` … `alt+9` | account tab 1 … 9 (`alt+` also while writing) |

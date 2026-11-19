@@ -79,6 +79,7 @@ const (
 	actLinks       action = "links"
 	actNextTab     action = "next_account"
 	actPrevTab     action = "previous_account"
+	actRefresh     action = "refresh"
 )
 
 type binding struct {
@@ -149,6 +150,7 @@ var defaults = []binding{
 	{actBackOrQuit, scNormal, "Layout", "back step by step, then quit", []string{"q", "ctrl+c"}},
 	{actQuit, scNormal, "Layout", "quit from anywhere (asks first)", []string{}},
 	{actRedraw, scNormal, "Layout", "repaint the whole screen", []string{"ctrl+l"}},
+	{actRefresh, scNormal, "Layout", "reload this account now: chats, unread, the open chat and thread", []string{"ctrl+r"}},
 
 	{actNextTab, scNormal, "Accounts", "next account tab", []string{"g t"}},
 	{actPrevTab, scNormal, "Accounts", "previous account tab", []string{"g T"}},

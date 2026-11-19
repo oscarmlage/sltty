@@ -216,6 +216,7 @@ type model struct {
 	hidden      bool                 // its account's tab is not the one in front
 	multi       bool                 // one of several accounts: settings tell its own from the shared
 	polls       int                  // polls so far (a backend without live updates)
+	lastPoll    time.Time            // when the last poll ran, wall clock
 	marked      map[string]time.Time // conversation → when its read cursor was last moved here
 	keepUnread  map[string]bool      // marked unread here, which the service cannot keep
 	snoozeTill  time.Time
@@ -599,8 +600,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case countsMsg:
 		return m, m.gotCounts(msg)
 	case convsRefreshMsg:
-		m.gotConvsRefresh(msg)
-		return m, nil
+		return m, m.gotConvsRefresh(msg)
 	case settledMsg:
 		if c := m.current(); c != nil && c.ID == msg.id {
 			m.settled = msg.id // Update fetches its pictures now
