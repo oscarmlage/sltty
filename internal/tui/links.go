@@ -97,12 +97,17 @@ func (m *model) openLinks(msg *chat.Message) {
 		rows[i] = [2]string{hint, text}
 		urls[i] = l.url
 	}
-	m.sheet = newSheet("Links", "press a key to open it · enter opens the selected one", rows)
+	hint := "press a key to open it · enter opens the selected one"
+	if len(urls) == 1 {
+		hint = "press a or " + m.km.first(actLinks) + " to open it"
+	}
+	m.sheet = newSheet("Links", hint, rows)
 	m.sheet.links = urls
 	m.help = true
 }
 
-// linkKey opens the link a hint key (or enter, on the cursor) stands for.
+// linkKey opens the link a hint key (or enter, on the cursor; or the links
+// key again, when there is only one) stands for.
 func (m *model) linkKey(k string, a action) (tea.Cmd, bool) {
 	s := m.sheet
 	i := -1
@@ -111,6 +116,8 @@ func (m *model) linkKey(k string, a action) (tea.Cmd, bool) {
 		i = int(k[0] - '1')
 	case len(k) == 1 && strings.Contains(hintKeys, k):
 		i = strings.Index(hintKeys, k)
+	case a == actLinks && len(s.links) == 1:
+		i = 0 // o o: the only link, without reading its hint
 	case a == actOpen:
 		if rows := s.visible(); s.cursor < len(rows) && rows[s.cursor][0] != "" {
 			i = strings.Index(hintKeys, rows[s.cursor][0][:1])

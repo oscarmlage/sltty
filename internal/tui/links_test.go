@@ -126,3 +126,28 @@ func TestClickOpensTheLinkUnderIt(t *testing.T) {
 	}
 	t.Skip("demo data draws no link in tools-team")
 }
+
+func TestLinksKeyTwiceOpensTheOnlyLink(t *testing.T) {
+	var opened []string
+	old := openURL
+	openURL = func(u string) error { opened = append(opened, u); return nil }
+	defer func() { openURL = old }()
+
+	m := newTest(t)
+	m.openLinks(&chat.Message{Text: "see https://example.com/one"})
+	if !m.help || len(m.sheet.links) != 1 {
+		t.Fatal("the links sheet did not open with one link")
+	}
+	press(m, "o")
+	if m.help || len(opened) != 1 || opened[0] != "https://example.com/one" {
+		t.Fatalf("o o: help %v, opened %v", m.help, opened)
+	}
+
+	// With two links, o again does not pick one.
+	opened = nil
+	m.openLinks(&chat.Message{Text: "https://example.com/a https://example.com/b"})
+	press(m, "o")
+	if len(opened) != 0 {
+		t.Fatalf("o with two links opened %v", opened)
+	}
+}

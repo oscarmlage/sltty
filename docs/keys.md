@@ -8,7 +8,7 @@ Highlights: `j/k` move everywhere (chats, messages, thread, the lists of
 replies to the message, quoting it in the chat; `t` opens its thread), `R`
 shows who reacted (tabs by emoji), `r` reacts (the usual few; typing finds any of Slack's
 emoji and the workspace's own, as in slk), `o` lists the message's links and opens one with a hint key (`a s d f…`
-or `1`-`9`, no mouse needed; it uses `open` / `xdg-open`), `v` opens the message's picture
+or `1`-`9`, no mouse needed; with a single link `o o` opens it; it uses `open` / `xdg-open`), `v` opens the message's picture
 full screen, `e` edits your message (`↑` in an empty composer
 edits your last one), `u` toggles read / unread (on a message: unread from
 there on; on a thread or an activity entry: just that one; `U` toggles the
