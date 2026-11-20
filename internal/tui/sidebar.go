@@ -493,10 +493,33 @@ func convIcon(c chat.Conversation) string {
 
 func (m *model) sideEntry(c chat.Conversation, selected bool, w int) string {
 	icon := convIcon(c)
-	if len(m.typing[c.ID]) > 0 {
+	switch {
+	case len(m.typing[c.ID]) > 0:
 		icon = sbOnline.Render("✎") + " "
+	case m.hasDraft(c.ID):
+		// A warm pencil is distinct from the accent-coloured live-typing
+		// pencil, and leaves the channel/DM icon's two cells intact.
+		icon = sbMark.Render("✎") + " "
 	}
 	return m.sideLineM(icon, c.Name, c.Unread, c.Muted, selected, w)
+}
+
+// hasDraft includes the composer currently being written, whose value is
+// kept in the widget until the user leaves that conversation, and drafts in
+// any of its open threads.
+func (m *model) hasDraft(convID string) bool {
+	if strings.TrimSpace(m.drafts[convID]) != "" {
+		return true
+	}
+	if c := m.current(); c != nil && c.ID == convID && strings.TrimSpace(m.chatIn.Value()) != "" {
+		return true
+	}
+	for key, text := range m.drafts {
+		if strings.HasPrefix(key, convID+"/") && strings.TrimSpace(text) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // count is an unread count as the badge shows it: 3303 is 3.3K.
