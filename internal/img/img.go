@@ -94,10 +94,11 @@ var diacritics = []rune{
 // MaxCells is the largest side, in cells, a placeholder can number.
 var MaxCells = len(diacritics)
 
-// Upload is the escape sequence that sends a PNG to the terminal as image
-// id, to show in cols × rows placeholder cells. In tmux it is wrapped for
-// passthrough.
-func Upload(id uint32, pngData []byte, cols, rows int) string {
+// Upload sends a PNG for later Unicode placeholder cells. It deliberately
+// transmits without creating a placement at the terminal cursor: a placement
+// would leave a stray full image wherever an asynchronous download finished.
+// In tmux it is wrapped for passthrough.
+func Upload(id uint32, pngData []byte, _, _ int) string {
 	const chunk = 4096
 	payload := base64.StdEncoding.EncodeToString(pngData)
 	var b strings.Builder
@@ -109,7 +110,7 @@ func Upload(id uint32, pngData []byte, cols, rows int) string {
 		}
 		hdr := fmt.Sprintf("m=%d", more)
 		if i == 0 {
-			hdr = fmt.Sprintf("a=T,f=100,t=d,i=%d,U=1,c=%d,r=%d,q=2,m=%d", id, cols, rows, more)
+			hdr = fmt.Sprintf("a=t,f=100,t=d,i=%d,U=1,q=2,m=%d", id, more)
 		}
 		b.WriteString(wrap("\x1b_G" + hdr + ";" + payload[i:end] + "\x1b\\"))
 	}
