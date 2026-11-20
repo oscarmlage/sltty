@@ -128,7 +128,6 @@ func (m *model) render() string {
 	out = append(out, paint(m.statusLine(), m.width, paneBg))
 	m.overlayLoading(out)
 	m.overlayConnection(out)
-	m.overlayCopied(out)
 	if m.picker != nil && m.picker.kind != pickTheme || m.help || m.quitting {
 		m.backdrop(out) // not under the theme picker: it previews the theme
 	}
@@ -144,6 +143,9 @@ func (m *model) render() string {
 	if m.quitting {
 		m.overlayQuit(out)
 	}
+	// Copy confirmation belongs above a sheet too: the link picker otherwise
+	// covers the normal top-right notification.
+	m.overlayCopied(out)
 	return strings.Join(out, "\n")
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/oscarmlage/sltty/internal/chat"
 	"github.com/oscarmlage/sltty/internal/emoji"
@@ -294,6 +295,38 @@ func (m *model) normalKey(k string) tea.Cmd {
 	return m.paneAction(a)
 }
 
+// copyMessage is the readable content of a message, including Slack's
+// attachment cards. Forwarded/link-preview posts often have no Text at all:
+// their useful body is entirely in Attachments.
+func copyMessage(msg *chat.Message) string {
+	var out []string
+	add := func(s string) {
+		if s = strings.TrimSpace(ansi.Strip(slackMrkdwn(s))); s != "" {
+			out = append(out, s)
+		}
+	}
+	add(msg.Text)
+	for _, a := range msg.Attachments {
+		add(a.Pretext)
+		if a.Title != "" {
+			title := a.Title
+			if a.TitleURL != "" {
+				title += "\n" + a.TitleURL
+			}
+			add(title)
+		}
+		add(a.Text)
+		for _, f := range a.Fields {
+			add(f.Title + ": " + f.Value)
+		}
+		add(a.Footer)
+	}
+	for _, c := range msg.Context {
+		add(c)
+	}
+	return strings.Join(out, "\n\n")
+}
+
 func (m *model) paneAction(a action) tea.Cmd {
 	if a == actWho {
 		return m.who()
@@ -301,7 +334,7 @@ func (m *model) paneAction(a action) tea.Cmd {
 	if a == actYank {
 		if msg := m.target(); msg != nil {
 			m.status = "copied message"
-			return tea.SetClipboard(msg.Text)
+			return tea.SetClipboard(copyMessage(msg))
 		}
 		m.status = "no message selected"
 		return nil

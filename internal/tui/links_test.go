@@ -53,7 +53,7 @@ func TestLinksSheetOpensByHint(t *testing.T) {
 		t.Fatal("o did not open the links sheet")
 	}
 	s := screen(m)
-	if !strings.Contains(s, "Links") || !strings.Contains(s, "a 1") {
+	if !strings.Contains(s, "Links") || !strings.Contains(s, "a 1") || !strings.Contains(s, "yank") {
 		t.Fatalf("sheet not drawn with hints:\n%s", s)
 	}
 	press(m, "2") // 2 is the second link, like s

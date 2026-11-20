@@ -366,6 +366,9 @@ func (m *model) overlaySheet(rows []string) {
 	}
 	k := m.km.first
 	hintsRows := [][2]string{{k(actFilter), "search"}, {k(actDown) + "/" + k(actUp), "move"}, {k(actBack) + "/" + k(actBackOrQuit), "close"}}
+	if s.links != nil {
+		hintsRows = append([][2]string{{"y", "yank"}}, hintsRows...)
+	}
 	if len(s.tabs) > 0 {
 		hintsRows = append([][2]string{{k(actFocusLeft) + "/" + k(actFocusRight), "tabs"}}, hintsRows...)
 	}
