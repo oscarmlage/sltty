@@ -73,6 +73,9 @@ func renderMsgs(msgs []chat.Message, width int, inThread bool, me string, now ti
 			}
 			lines = append(lines, us.Render(msg.User)+"  "+dimStyle.Render(clock(msg.At, now)))
 		}
+		if msg.Broadcast && !inThread {
+			lines = append(lines, broadcastThreadLine(msg, msgs, body))
+		}
 		// Interpret Slack mrkdwn before wrapping: a labelled link should take
 		// the width of its label, not of its hidden URL.
 		// Text, not Raw: Text has the mentions by name, the links as
@@ -154,6 +157,26 @@ func renderMsgs(msgs []chat.Message, width int, inThread bool, me string, now ti
 		lines[i] = " " + ansi.Truncate(l, inner, "…")
 	}
 	return lines, blocks
+}
+
+// broadcastThreadLine gives a channel-broadcast thread reply the context
+// Slack shows above it, rather than making it read like an unrelated message.
+func broadcastThreadLine(msg chat.Message, msgs []chat.Message, width int) string {
+	root := msg.ThreadContext
+	for _, candidate := range msgs {
+		if root == "" && candidate.TS == msg.ThreadRoot {
+			root = candidate.Text
+			if root == "" && len(candidate.Attachments) > 0 {
+				root = candidate.Attachments[0].Title
+			}
+			break
+		}
+	}
+	label := "↳ replied to a thread"
+	if root == "" {
+		return dimStyle.Render(label)
+	}
+	return dimStyle.Render(label+": ") + linkStyle.Render(ansi.Truncate(strings.Join(strings.Fields(root), " "), max(1, width-lipgloss.Width(label)-2), "…"))
 }
 
 // attachmentLines renders Slack's app cards without degrading them into one

@@ -94,15 +94,20 @@ type Message struct {
 	Text   string // as people read it
 	// Raw is the markup behind Text (mentions, links) when it differs:
 	// what an edit starts from.
-	Raw         string
-	At          time.Time
-	Reactions   []Reaction
-	Replies     int       // thread replies; only on a thread's root
-	LastReply   time.Time // when Replies > 0
-	Edited      bool
-	Files       []File       // uploaded files
-	Attachments []Attachment // Slack message attachments/cards
-	Context     []string     // the small print under it (Block Kit context)
+	Raw       string
+	At        time.Time
+	Reactions []Reaction
+	Replies   int       // thread replies; only on a thread's root
+	LastReply time.Time // when Replies > 0
+	// Broadcast marks a thread reply also sent into the channel. ThreadRoot
+	// identifies the root message so clients can give that context.
+	Broadcast     bool
+	ThreadRoot    string
+	ThreadContext string // root text sent alongside a thread broadcast, when any
+	Edited        bool
+	Files         []File       // uploaded files
+	Attachments   []Attachment // Slack message attachments/cards
+	Context       []string     // the small print under it (Block Kit context)
 	// Quote is the message it answers (a Telegram reply), drawn above it.
 	Quote *Quote
 }

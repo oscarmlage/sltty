@@ -104,6 +104,14 @@ func TestSlackMessagesReadAsInSlack(t *testing.T) {
 	}
 }
 
+func TestSlackThreadBroadcastKeepsRootContext(t *testing.T) {
+	s := &Slack{users: map[string]string{}, urls: map[string]string{}}
+	m := s.message(slackMessage{TS: "2", User: "U1", Text: "the reply", ThreadTS: "1", Subtype: "thread_broadcast", Root: &slackMessage{TS: "1", Text: "the root message"}})
+	if !m.Broadcast || m.ThreadRoot != "1" || m.ThreadContext != "the root message" {
+		t.Fatalf("broadcast: %+v", m)
+	}
+}
+
 func TestSlackPictures(t *testing.T) {
 	s, _ := fakeSlack(t)
 	ctx := context.Background()

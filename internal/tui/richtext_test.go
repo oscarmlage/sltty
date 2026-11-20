@@ -24,6 +24,19 @@ func TestMarksStayOutOfLinksAndCode(t *testing.T) {
 	}
 }
 
+func TestBroadcastThreadReplyHasContext(t *testing.T) {
+	at := time.Date(2025, 1, 2, 9, 0, 0, 0, time.UTC)
+	msgs := []chat.Message{
+		{TS: "1", User: "ana", At: at, Text: "Review the deployment plan before lunch"},
+		{TS: "2", User: "bob", At: at.Add(time.Minute), Text: "Looks good", Broadcast: true, ThreadRoot: "1"},
+	}
+	lines, _ := renderMsgs(msgs, 60, false, "you", at, "", nil, stubArt{})
+	got := ansi.Strip(strings.Join(lines, "\n"))
+	if !strings.Contains(got, "↳ replied to a thread: Review the deployment plan") {
+		t.Fatalf("broadcast context missing:\n%s", got)
+	}
+}
+
 func TestSentryReadsAsInSlack(t *testing.T) {
 	const url = "https://sentry.test/issues/1/?a=1&b=2"
 	s := slackMrkdwn(":red_circle: [*ActivityError*](" + url + ")\n```GitLab rejected 'x' -> 'y'\nsee https://git.test/a_b_c```\nenvironment: `production`")

@@ -44,18 +44,21 @@ func (f slackFile) picture() string {
 }
 
 type slackMessage struct {
-	TS          string            `json:"ts"`
-	Channel     string            `json:"channel"`
-	User        string            `json:"user"`
-	Text        string            `json:"text"`
-	ThreadTS    string            `json:"thread_ts"`
-	ReplyCount  int               `json:"reply_count"`
-	LatestReply string            `json:"latest_reply"`
-	Edited      *struct{}         `json:"edited"`
-	Reactions   []slackReaction   `json:"reactions"`
-	Files       []slackFile       `json:"files"`
-	Attachments []slackAttachment `json:"attachments"`
-	Blocks      slackBlocks       `json:"blocks"`
+	TS             string            `json:"ts"`
+	Channel        string            `json:"channel"`
+	User           string            `json:"user"`
+	Text           string            `json:"text"`
+	Subtype        string            `json:"subtype"`
+	ThreadTS       string            `json:"thread_ts"`
+	ReplyBroadcast bool              `json:"reply_broadcast"`
+	Root           *slackMessage     `json:"root"`
+	ReplyCount     int               `json:"reply_count"`
+	LatestReply    string            `json:"latest_reply"`
+	Edited         *struct{}         `json:"edited"`
+	Reactions      []slackReaction   `json:"reactions"`
+	Files          []slackFile       `json:"files"`
+	Attachments    []slackAttachment `json:"attachments"`
+	Blocks         slackBlocks       `json:"blocks"`
 	// A bot's message (bot_message) has no user: it is the bot's, under
 	// the name it posted with.
 	BotID      string      `json:"bot_id"`
@@ -110,7 +113,14 @@ type slackAttachment struct {
 
 func (s *Slack) message(m slackMessage) Message {
 	at, _ := parseSlackTS(m.TS)
-	x := Message{TS: m.TS, User: s.user(m.User), UserID: m.User, At: at, Replies: m.ReplyCount, Edited: m.Edited != nil}
+	x := Message{TS: m.TS, User: s.user(m.User), UserID: m.User, At: at, Replies: m.ReplyCount, Edited: m.Edited != nil,
+		Broadcast: m.ReplyBroadcast || m.Subtype == "thread_broadcast", ThreadRoot: m.ThreadTS}
+	if m.Root != nil {
+		x.ThreadContext = s.mrkdwn(m.Root.Text)
+		if x.ThreadRoot == "" {
+			x.ThreadRoot = m.Root.TS
+		}
+	}
 	if m.User == "" && m.BotID != "" {
 		x.UserID = m.BotID
 		// username is often the app's technical handle (for example
