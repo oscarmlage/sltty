@@ -24,6 +24,9 @@ type Workspace struct {
 	SelectedTS      string          `json:"selected_ts,omitempty"`
 	ChatOffset      int             `json:"chat_offset,omitempty"`
 	Recent          []string        `json:"recent,omitempty"` // conversation IDs, most recently opened first
+	// Drafts are unsent text by conversation or thread key. State is owner-only
+	// (0600), but callers should still treat these as private message content.
+	Drafts map[string]string `json:"drafts,omitempty"`
 }
 type State struct {
 	Workspaces map[string]Workspace `json:"workspaces"`

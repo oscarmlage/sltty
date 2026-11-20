@@ -104,13 +104,15 @@ func TestSaveUIStateNeedsAPathAndRecordsTheView(t *testing.T) {
 	m.opts.StatePath = uistate.Path()
 	m.unreadOnly = true
 	m.goTo(t, "tools-team")
+	m.chatIn.SetValue("keep this draft")
+	m.drafts[threadKey("C2", "1")] = "thread draft"
 	press(m, "l", "k")
 	if err := m.saveUIState(); err != nil {
 		t.Fatal(err)
 	}
 	s, _ := uistate.Load()
 	w := s.Workspaces[m.backend.Workspace()]
-	if w.Conversation == "" || w.ImagesOn == nil || w.SidebarWidth == 0 || !w.UnreadOnly {
+	if w.Conversation == "" || w.ImagesOn == nil || w.SidebarWidth == 0 || !w.UnreadOnly || w.Drafts[m.current().ID] != "keep this draft" || w.Drafts[threadKey("C2", "1")] != "thread draft" {
 		t.Fatalf("saved workspace: %+v", w)
 	}
 }

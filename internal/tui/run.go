@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -157,6 +158,7 @@ func RunAccounts(accounts []Account, opts Options) error {
 			if saved, ok := state.Workspaces[a.Backend.Workspace()]; ok {
 				m.collapsed, m.unreadOnly = saved.Collapsed, saved.UnreadOnly
 				m.recent = slices.Clone(saved.Recent)
+				m.drafts = cloneDrafts(saved.Drafts)
 				m.restoreConv, m.restoreTS, m.restoreOff = saved.Conversation, saved.SelectedTS, saved.ChatOffset
 			}
 		}
@@ -215,10 +217,31 @@ func (m *model) saveUIState() error {
 			ts = x.TS
 		}
 	}
+	drafts := cloneDrafts(m.drafts)
+	if c := m.current(); c != nil {
+		if text := m.chatIn.Value(); strings.TrimSpace(text) != "" {
+			drafts[c.ID] = text
+		}
+	}
+	if t := m.thread; t != nil {
+		if text := m.threadIn.Value(); strings.TrimSpace(text) != "" {
+			drafts[threadKey(t.convID, t.root)] = text
+		}
+	}
 	s.Workspaces[m.backend.Workspace()] = uistate.Workspace{
 		Theme: m.themeName, Layout: m.layoutName, Clock: clockName(), ImagesOn: &on, CustomEmoji: &emoji,
 		ComposerHeight: m.inputRows, SidebarWidth: m.side, UnreadOnly: m.unreadOnly, HistoryCache: &cacheOn, HistoryCacheTTL: int(m.opts.HistoryCacheTTL / time.Minute), Collapsed: m.collapsed,
-		Conversation: current, SelectedTS: ts, ChatOffset: m.chatOff, Recent: m.recent,
+		Conversation: current, SelectedTS: ts, ChatOffset: m.chatOff, Recent: m.recent, Drafts: drafts,
 	}
 	return uistate.Save(s)
+}
+
+func cloneDrafts(in map[string]string) map[string]string {
+	out := make(map[string]string, len(in))
+	for key, text := range in {
+		if strings.TrimSpace(text) != "" {
+			out[key] = text
+		}
+	}
+	return out
 }
