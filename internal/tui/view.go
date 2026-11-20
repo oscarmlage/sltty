@@ -127,6 +127,7 @@ func (m *model) render() string {
 	}
 	out = append(out, paint(m.statusLine(), m.width, paneBg))
 	m.overlayLoading(out)
+	m.overlayConnection(out)
 	if m.picker != nil && m.picker.kind != pickTheme || m.help || m.quitting {
 		m.backdrop(out) // not under the theme picker: it previews the theme
 	}
@@ -147,6 +148,16 @@ func (m *model) render() string {
 
 // pane puts a pane's content on its background, inside a box in the panels
 // layout.
+// overlayConnection keeps a network failure visible without making the
+// status-line error the only indication. Dialogs cover it deliberately.
+func (m *model) overlayConnection(rows []string) {
+	if !m.replied || m.connected || len(rows) == 0 {
+		return
+	}
+	bubble := offlinePill.Render("● Offline")
+	m.float(rows, []string{bubble}, max(0, m.width-lipgloss.Width(bubble)-1), 0)
+}
+
 func (m *model) pane(content []string, w int, focused bool, bg string) []string {
 	if boxed() {
 		content = frame("", content, w, focused)

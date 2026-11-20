@@ -90,8 +90,8 @@ func TestPresenceAndConnection(t *testing.T) {
 	}
 	m.backend = failing{m.backend}
 	m.goTo(t, "random")
-	if m.connected || !strings.Contains(screen(m), "Disconnected") {
-		t.Fatal("a failed call did not show Disconnected")
+	if m.connected || !strings.Contains(screen(m), "Disconnected") || !strings.Contains(screen(m), "Offline") {
+		t.Fatal("a failed call did not show the offline state")
 	}
 }
 
