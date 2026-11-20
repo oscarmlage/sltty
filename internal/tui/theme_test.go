@@ -128,9 +128,9 @@ func TestThemePickerPreviewsAndReverts(t *testing.T) {
 	if m.themeName != "nord" || theme.Primary != "#88c0d0" || !boxed() {
 		t.Fatalf("picked %q", m.themeName)
 	}
-	press(m, "L")
+	m.paneAction(actLayout)
 	if boxed() || m.themeName != "nord" {
-		t.Fatal("L did not switch to the slack layout")
+		t.Fatal("layout action did not switch to the slack layout")
 	}
 }
 

@@ -82,7 +82,7 @@ Two layouts, any theme in either:
 
 Built-in themes: aubergine (slack layout), terminal, dracula, nord, slk, tokyo
 night, gruvbox, catppuccin, solarized, light, telegram, telegram light. `T` picks one with a live
-preview, `L` switches layout.
+preview; layout switches from Settings or `:layout`.
 
 ## More demos
 

@@ -78,6 +78,17 @@ func TestSlackMessageLink(t *testing.T) {
 	}
 }
 
+func TestSlackMessageLinkFallsBackOnEnterprise(t *testing.T) {
+	s, _ := apiServer(t, map[string]handler{"chat.getPermalink": func(url.Values) any {
+		return obj{"ok": false, "error": "enterprise_is_restricted"}
+	}})
+	got, err := s.MessageLink(context.Background(), "C1", "123.456")
+	want := "https://app.slack.com/client/T1/C1/thread/C1-123456"
+	if err != nil || got != want {
+		t.Fatalf("link %q, want %q: %v", got, want, err)
+	}
+}
+
 func TestSlackMembers(t *testing.T) {
 	s, calls := apiServer(t, map[string]handler{
 		"conversations.members": func(f url.Values) any {
