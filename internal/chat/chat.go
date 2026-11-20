@@ -318,6 +318,11 @@ type LinkFormatter interface {
 	FormatLinks(text string) string
 }
 
+// ChannelMentioner turns a picked channel into its native mention markup.
+type ChannelMentioner interface {
+	ChannelMarkup(id, name string) string
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error

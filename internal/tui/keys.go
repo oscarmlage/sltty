@@ -142,7 +142,7 @@ func (m *model) normalModeFromInsert() tea.Cmd {
 
 // submit is send: it posts the composer's text, or saves the edit.
 func (m *model) submit(in *textarea.Model) tea.Cmd {
-	text := emoji.Expand(m.encodeMentions(m.attachKey(in), strings.TrimSpace(in.Value())))
+	text := emoji.Expand(m.encodeChannels(m.attachKey(in), m.encodeMentions(m.attachKey(in), strings.TrimSpace(in.Value()))))
 	if f, ok := m.backend.(chat.LinkFormatter); ok {
 		text = f.FormatLinks(text)
 	}

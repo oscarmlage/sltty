@@ -28,14 +28,15 @@ const (
 
 // suggest is the open list of people to mention.
 type suggest struct {
-	key    string // the composer's attachKey
-	conv   string
-	query  string // what follows the @
-	local  []chat.Person
-	remote []chat.Person // the service's answer for remoteQ
-	remQ   string
-	items  []chat.Person
-	sel    int
+	key     string // the composer's attachKey
+	conv    string
+	channel bool
+	query   string // what follows the @ or #
+	local   []chat.Person
+	remote  []chat.Person // the service's answer for remoteQ
+	remQ    string
+	items   []chat.Person
+	sel     int
 }
 
 type (
@@ -74,6 +75,25 @@ func mentionQuery(in *textarea.Model) (string, int, bool) {
 	return word[1:], col - start, true
 }
 
+func channelQuery(in *textarea.Model) (string, int, bool) {
+	lines := strings.Split(in.Value(), "\n")
+	row := in.Line()
+	if row >= len(lines) {
+		return "", 0, false
+	}
+	line := []rune(lines[row])
+	col := min(in.Column(), len(line))
+	start := col
+	for start > 0 && !unicode.IsSpace(line[start-1]) {
+		start--
+	}
+	word := string(line[start:col])
+	if !strings.HasPrefix(word, "#") || strings.Count(word, "#") > 1 {
+		return "", 0, false
+	}
+	return word[1:], col - start, true
+}
+
 // conversationPeople are the authors of the composer's conversation (or
 // thread), newest first: the likeliest to mention, known at once.
 func (m *model) conversationPeople(in *textarea.Model) []chat.Person {
@@ -105,26 +125,42 @@ func (m *model) conversationPeople(in *textarea.Model) []chat.Person {
 
 // updateSuggest opens, refreshes or closes the list after each key typed.
 func (m *model) updateSuggest(in *textarea.Model) tea.Cmd {
-	if _, ok := m.backend.(chat.Mentioner); !ok {
-		m.suggest = nil
-		return nil
+	q, _, mention := mentionQuery(in)
+	_, channels := m.backend.(chat.ChannelMentioner)
+	channel := false
+	if !mention {
+		q, _, channel = channelQuery(in)
 	}
-	q, _, ok := mentionQuery(in)
-	if !ok {
+	if (!mention || !isMentioner(m.backend)) && (!channel || !channels) {
 		m.suggest = nil
 		return nil
 	}
 	key, conv := m.attachKey(in), m.convID()
-	if s := m.suggest; s == nil || s.key != key {
-		m.suggest = &suggest{key: key, conv: conv, local: m.conversationPeople(in)}
+	if s := m.suggest; s == nil || s.key != key || s.channel != channel {
+		s := &suggest{key: key, conv: conv, channel: channel}
+		if channel {
+			for _, c := range m.convs {
+				if c.Kind == chat.Channel {
+					s.local = append(s.local, chat.Person{ID: c.ID, Name: c.Name, Full: c.Topic})
+				}
+			}
+		} else {
+			s.local = m.conversationPeople(in)
+		}
+		m.suggest = s
 	}
 	s := m.suggest
 	if s.query != q {
 		s.query, s.sel = q, 0
 	}
 	m.rankSuggest()
+	if channel {
+		return nil
+	}
 	return tea.Tick(suggestDelay, func(time.Time) tea.Msg { return suggestTick{key, conv, q} })
 }
+
+func isMentioner(b chat.Backend) bool { _, ok := b.(chat.Mentioner); return ok }
 
 // rankSuggest lists the people matching the query: the conversation's
 // first, then the service's.
@@ -150,7 +186,7 @@ func (m *model) rankSuggest() {
 // askPeople asks the service, once typing rested on the same query.
 func (m *model) askPeople(t suggestTick) tea.Cmd {
 	s := m.suggest
-	if s == nil || s.key != t.key || s.query != t.query || s.remQ == t.query && s.remote != nil {
+	if s == nil || s.channel || s.key != t.key || s.query != t.query || s.remQ == t.query && s.remote != nil {
 		return nil
 	}
 	mn := m.backend.(chat.Mentioner)
@@ -181,7 +217,11 @@ func (m *model) suggestKey(in *textarea.Model, k string) (tea.Cmd, bool) {
 	}
 	switch k {
 	case "tab", "enter":
-		m.pickMention(in, s.items[s.sel])
+		if s.channel {
+			m.pickChannel(in, s.items[s.sel])
+		} else {
+			m.pickMention(in, s.items[s.sel])
+		}
 	case "down", "ctrl+n":
 		s.sel = (s.sel + 1) % len(s.items)
 	case "up", "ctrl+p":
@@ -195,6 +235,23 @@ func (m *model) suggestKey(in *textarea.Model, k string) (tea.Cmd, bool) {
 }
 
 // pickMention replaces the "@word" at the cursor with the person's mention.
+func (m *model) pickChannel(in *textarea.Model, p chat.Person) {
+	_, n, ok := channelQuery(in)
+	if !ok {
+		m.suggest = nil
+		return
+	}
+	for range n {
+		*in, _ = in.Update(backspace())
+	}
+	text := "#" + p.Name
+	in.InsertString(text + " ")
+	key := m.attachKey(in)
+	refs := slices.DeleteFunc(m.channels[key], func(r mentionRef) bool { return r.text == text })
+	m.channels[key] = append(refs, mentionRef{text, p.ID})
+	m.suggest = nil
+}
+
 func (m *model) pickMention(in *textarea.Model, p chat.Person) {
 	_, n, ok := mentionQuery(in)
 	if !ok {
@@ -247,6 +304,23 @@ func replaceMention(text, mention, with string) string {
 
 // decodeMentions is the other way, for an edit: <@ID> (and Slack's
 // <@ID|name>) read @name again, remembered for when it is saved.
+func (m *model) encodeChannels(key, text string) string {
+	refs := slices.Clone(m.channels[key])
+	delete(m.channels, key)
+	if len(refs) == 0 {
+		return text
+	}
+	cm, ok := m.backend.(chat.ChannelMentioner)
+	if !ok {
+		return text
+	}
+	slices.SortFunc(refs, func(a, b mentionRef) int { return len(b.text) - len(a.text) })
+	for _, r := range refs {
+		text = replaceMention(text, r.text, cm.ChannelMarkup(r.id, strings.TrimPrefix(r.text, "#")))
+	}
+	return text
+}
+
 func (m *model) decodeMentions(key, raw string) string {
 	mn, ok := m.backend.(chat.Mentioner)
 	if !ok || !strings.Contains(raw, "<@") {
@@ -270,7 +344,12 @@ func (m *model) suggestLines(in *textarea.Model, w int) []string {
 	if s == nil || m.mode != insert || in != m.activeInput() || s.key != m.attachKey(in) {
 		return nil
 	}
-	head := " " + dimStyle.Render("mention · tab pick · ctrl+n/p move · esc close")
+	what := "mention"
+	prefix := "@"
+	if s.channel {
+		what, prefix = "channel", "#"
+	}
+	head := " " + dimStyle.Render(what+" · tab pick · ctrl+n/p move · esc close")
 	if len(s.items) == 0 {
 		msg := "no one matches"
 		if s.query == "" {
@@ -280,9 +359,9 @@ func (m *model) suggestLines(in *textarea.Model, w int) []string {
 	}
 	out := []string{paint(head, w, surfaceBg)}
 	for i, p := range s.items {
-		mark, name := "  ", textStyle.Render("@"+p.Name)
+		mark, name := "  ", textStyle.Render(prefix+p.Name)
 		if i == s.sel {
-			mark, name = modalMark.Render("▌")+" ", modalSel.Render("@"+p.Name)
+			mark, name = modalMark.Render("▌")+" ", modalSel.Render(prefix+p.Name)
 		}
 		line := mark + name
 		if p.Full != "" && !strings.EqualFold(p.Full, p.Name) {

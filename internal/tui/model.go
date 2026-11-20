@@ -268,7 +268,8 @@ type model struct {
 	drafts           map[string]string       // unsent text per conversation or thread
 	attach           map[string]*chat.Upload // a file to send with the next message, per conversation or thread
 	mentions         map[string][]mentionRef // the mentions picked into each composer
-	suggest          *suggest                // the people to mention, while "@name" is being typed
+	channels         map[string][]mentionRef // picked #channels, per composer
+	suggest          *suggest                // people or channels while @name / #name is typed
 
 	width, height int
 	status, err   string
@@ -324,6 +325,7 @@ func newModel(b chat.Backend, km *keymap, opts Options) *model {
 		drafts:       map[string]string{},
 		attach:       map[string]*chat.Upload{},
 		mentions:     map[string][]mentionRef{},
+		channels:     map[string][]mentionRef{},
 		readThreads:  map[string]int{},
 		readActivity: map[string]bool{},
 		unreadThread: map[string]bool{},

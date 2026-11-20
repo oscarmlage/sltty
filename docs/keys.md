@@ -26,7 +26,8 @@ a poll comes much later than due, as after the laptop slept.
 
 Mentions: `@` and a few letters while writing list whom to mention, the
 conversation's people first, then (as you keep typing) Slack's directory or
-Telegram's members and contacts; `tab` or `enter` picks, `ctrl+n`/`ctrl+p`
+Telegram's members and contacts. On Slack, `#` and letters similarly list
+channels and send a native linked channel mention; `tab` or `enter` picks, `ctrl+n`/`ctrl+p`
 or the arrows move, `esc` closes the list. A picked mention reads `@name`
 and is sent as a real one: it notifies (on Telegram, `@username`, or the
 name linked to the person when they have none). Editing a message keeps its

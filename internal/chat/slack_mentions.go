@@ -54,6 +54,9 @@ func (s *Slack) People(ctx context.Context, _, query string) ([]Person, error) {
 	return out, nil
 }
 
+// ChannelMarkup is Slack's native linked-channel form.
+func (s *Slack) ChannelMarkup(id, name string) string { return "<#" + id + "|" + name + ">" }
+
 func (s *Slack) PersonName(id string) (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
