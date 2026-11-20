@@ -59,7 +59,7 @@ func (m *model) overlayPicker(rows []string) {
 			if it.right != "" {
 				right = " " + dimStyle.Render(it.right)
 			}
-			if p.kind == pickReact && strings.HasPrefix(it.emoji, ":") {
+			if (p.kind == pickReact || p.kind == pickEmoji) && strings.HasPrefix(it.emoji, ":") {
 				// A workspace emoji's picture, kept out of the selection's
 				// restyling: its colour is its id.
 				icon = cmp.Or(m.emojiText(it.emoji), "  ") + "  "

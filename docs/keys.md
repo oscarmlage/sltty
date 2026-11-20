@@ -7,7 +7,7 @@ Highlights: `j/k` move everywhere (chats, messages, thread, the lists of
 `ctrl+k` / `ctrl+f` / `r` / `T`), `h/l` panes, `enter` opens a thread (on Telegram it
 replies to the message, quoting it in the chat; `t` opens its thread), `R`
 shows who reacted (tabs by emoji), `r` reacts (the usual few; typing finds any of Slack's
-emoji and the workspace's own, as in slk), `o` lists the message's links and opens one with a hint key (`a s d f…`
+emoji and the workspace's own, as in slk), `ctrl+e` while writing opens an emoji picker (including Slack workspace emoji), and `:who` lists the open channel's members where the service permits it (Slack, and Telegram groups), `o` lists the message's links and opens one with a hint key (`a s d f…`
 or `1`-`9`, no mouse needed; with a single link `o o` opens it; it uses `open` / `xdg-open`), `v` opens the message's picture
 full screen, `e` edits your message (`↑` in an empty composer
 edits your last one), `u` toggles read / unread (on a message: unread from
@@ -30,7 +30,7 @@ Telegram's members and contacts; `tab` or `enter` picks, `ctrl+n`/`ctrl+p`
 or the arrows move, `esc` closes the list. A picked mention reads `@name`
 and is sent as a real one: it notifies (on Telegram, `@username`, or the
 name linked to the person when they have none). Editing a message keeps its
-mentions. An `@name` typed without picking it is plain text.
+mentions. An `@name` typed without picking it is plain text. Standard emoji shortcodes such as `:rocket:` are sent as emoji; Slack workspace emoji stay as `:name:`.
 
 Files: drop one on the terminal (Ghostty, kitty, iTerm2 and WezTerm paste
 its path) or `ctrl+v` while writing (a picture in the clipboard, a
@@ -119,11 +119,13 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | Messages | NORMAL | `view_picture` | `v` | view the message's picture full size |
 | Messages | NORMAL | `insert` | `i`, `a` | write (INSERT mode) |
 | Messages | NORMAL | `back` | `esc`, `x` | back, close |
+| Messages | NORMAL | `who` | — | list channel or group members |
 | INSERT mode | INSERT | `send` | `enter` | send / save the edit |
 | INSERT mode | INSERT | `newline` | `shift+enter`, `alt+enter`, `ctrl+j` | new line |
 | INSERT mode | INSERT | `normal_mode` | `esc`, `ctrl+c`, `j k` | back to NORMAL |
 | INSERT mode | INSERT | `edit_last` | `up` | edit your last message |
 | INSERT mode | INSERT | `paste_image` | `ctrl+v`, `super+v` | attach the clipboard's picture or copied file (else paste its text) |
+| INSERT mode | INSERT | `emoji` | `ctrl+e` | insert an emoji |
 | Lists | FILTER | `picker_down` | `ctrl+n`, `ctrl+j`, `down` | next while filtering |
 | Lists | FILTER | `picker_up` | `ctrl+p`, `ctrl+k`, `up` | previous while filtering |
 | Lists | FILTER | `picker_select` | `enter` | pick |

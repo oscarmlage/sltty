@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/oscarmlage/sltty/internal/chat"
+	"github.com/oscarmlage/sltty/internal/emoji"
 )
 
 const (
@@ -116,6 +117,8 @@ func (m *model) insertKey(msg tea.KeyPressMsg, k string) tea.Cmd {
 				return m.pasteImage()
 			}
 		}
+	case actEmoji:
+		return m.openEmoji(in)
 	}
 	var cmd tea.Cmd
 	*in, cmd = in.Update(msg)
@@ -138,7 +141,7 @@ func (m *model) normalModeFromInsert() tea.Cmd {
 
 // submit is send: it posts the composer's text, or saves the edit.
 func (m *model) submit(in *textarea.Model) tea.Cmd {
-	text := m.encodeMentions(m.attachKey(in), strings.TrimSpace(in.Value()))
+	text := emoji.Expand(m.encodeMentions(m.attachKey(in), strings.TrimSpace(in.Value())))
 	m.suggest = nil
 	c := m.current()
 	if c == nil {
@@ -292,6 +295,9 @@ func (m *model) normalKey(k string) tea.Cmd {
 }
 
 func (m *model) paneAction(a action) tea.Cmd {
+	if a == actWho {
+		return m.who()
+	}
 	if a == actThread {
 		if m.focus == paneChat && m.view == sideConv {
 			return m.openThread()

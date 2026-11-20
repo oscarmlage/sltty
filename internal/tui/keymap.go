@@ -80,6 +80,8 @@ const (
 	actNextTab     action = "next_account"
 	actPrevTab     action = "previous_account"
 	actRefresh     action = "refresh"
+	actEmoji       action = "emoji"
+	actWho         action = "who"
 )
 
 type binding struct {
@@ -129,6 +131,7 @@ var defaults = []binding{
 	{actNormalMode, scInsert, "INSERT mode", "back to NORMAL", []string{"esc", "ctrl+c", "j k"}},
 	{actEditLast, scInsert, "INSERT mode", "edit your last message", []string{"up"}},
 	{actPasteImage, scInsert, "INSERT mode", "attach the clipboard's picture or copied file (else paste its text)", []string{"ctrl+v", "super+v"}},
+	{actEmoji, scInsert, "INSERT mode", "insert an emoji", []string{"ctrl+e"}},
 
 	{actPickDown, scPicker, "Lists (ctrl+k, ctrl+f, r, T)", "next while filtering", []string{"ctrl+n", "ctrl+j", "down"}},
 	{actPickUp, scPicker, "Lists (ctrl+k, ctrl+f, r, T)", "previous while filtering", []string{"ctrl+p", "ctrl+k", "up"}},
@@ -151,6 +154,7 @@ var defaults = []binding{
 	{actQuit, scNormal, "Layout", "quit from anywhere (asks first)", []string{}},
 	{actRedraw, scNormal, "Layout", "repaint the whole screen", []string{"ctrl+l"}},
 	{actRefresh, scNormal, "Layout", "reload this account now: chats, unread, the open chat and thread", []string{"ctrl+r"}},
+	{actWho, scNormal, "Messages", "list channel or group members", nil},
 
 	{actNextTab, scNormal, "Accounts", "next account tab", []string{"g t"}},
 	{actPrevTab, scNormal, "Accounts", "previous account tab", []string{"g T"}},

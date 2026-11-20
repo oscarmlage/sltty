@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
@@ -30,6 +31,7 @@ const (
 	pickReact
 	pickTheme
 	pickStatus
+	pickEmoji
 )
 
 type pickItem struct {
@@ -52,11 +54,12 @@ type picker struct {
 	cursor  int
 	first   int // first item on screen
 	target  chat.Message
-	convID  string // pickReact: the conversation of target
-	was     string // pickTheme: the theme to go back to
-	waiting bool   // pickSearch: a query is on its way
-	here    string // pickSearch: the conversation it was opened in
-	scope   string // pickSearch: here, or "" for everywhere
+	convID  string          // pickReact: the conversation of target
+	was     string          // pickTheme: the theme to go back to
+	insert  *textarea.Model // pickEmoji: composer to insert into
+	waiting bool            // pickSearch: a query is on its way
+	here    string          // pickSearch: the conversation it was opened in
+	scope   string          // pickSearch: here, or "" for everywhere
 	people  []chat.Person
 	peopleQ string
 }
@@ -123,6 +126,9 @@ func (m *model) openPicker(kind pickKind, target *chat.Message) tea.Cmd {
 		p.title, in.Placeholder, p.was = "Theme", "name", m.themeName
 	case pickStatus:
 		p.title, in.Placeholder = "Status", "type to filter…"
+	case pickEmoji:
+		p.title, in.Placeholder = "Insert emoji", "type an emoji name…"
+		load = m.loadCustomEmoji()
 	}
 	p.input = in
 	m.picker = p
@@ -133,10 +139,25 @@ func (m *model) openPicker(kind pickKind, target *chat.Message) tea.Cmd {
 
 // closePicker closes without picking: a previewed theme goes back.
 func (m *model) closePicker() {
-	if p := m.picker; p != nil && p.kind == pickTheme {
-		m.setTheme(p.was, m.layoutName)
+	if p := m.picker; p != nil {
+		if p.kind == pickTheme {
+			m.setTheme(p.was, m.layoutName)
+		}
+		if p.insert != nil {
+			m.mode = insert
+			p.insert.Focus()
+		}
 	}
 	m.picker = nil
+}
+
+// openEmoji pauses INSERT mode for a searchable picker, then resumes it at
+// the same composer after choosing or cancelling.
+func (m *model) openEmoji(in *textarea.Model) tea.Cmd {
+	m.mode = normal
+	cmd := m.openPicker(pickEmoji, nil)
+	m.picker.insert = in
+	return cmd
 }
 
 func (m *model) pickerTypingKey(msg tea.KeyPressMsg, k string) tea.Cmd {
@@ -294,6 +315,8 @@ func (m *model) refreshPicker() tea.Cmd {
 		}
 		p.first = max(0, p.cursor-pickerRows+1)
 		m.previewTheme()
+	case pickEmoji:
+		p.items = m.emojiItems(q)
 	case pickStatus:
 		choices := []struct {
 			label   string
@@ -343,6 +366,26 @@ const maxReactItems = 200
 // reactItems is what the reaction picker offers for q: the usual few, and
 // once something is typed, every emoji Slack knows and the workspace's own,
 // as in slk. The usual come first among equal matches.
+func (m *model) emojiItems(q string) []pickItem {
+	var items []pickItem
+	for _, n := range slices.Sorted(maps.Keys(m.imgs.custom)) {
+		if q == "" || strings.Contains(n, q) || subsequence(q, n) {
+			items = append(items, pickItem{label: ":" + n + ":  " + n, emoji: ":" + n + ":"})
+		}
+	}
+	for _, n := range emoji.Names() {
+		if q != "" && !strings.Contains(n, q) && !subsequence(q, n) {
+			continue
+		}
+		g, _ := emoji.Glyph(n)
+		items = append(items, pickItem{label: g + "  " + n, emoji: g})
+		if len(items) == maxReactItems {
+			break
+		}
+	}
+	return items
+}
+
 func (m *model) reactItems(q string) []pickItem {
 	type choice struct{ emoji, names string }
 	cs := make([]choice, 0, len(reactions))
@@ -447,6 +490,12 @@ func (m *model) pick() tea.Cmd {
 			msg, err := m.backend.React(ctx, id, ts, it.emoji)
 			return changedMsg{id, msg, err}
 		})
+	case pickEmoji:
+		if p.insert != nil {
+			p.insert.InsertString(it.emoji)
+			m.mode = insert
+			return p.insert.Focus()
+		}
 	case pickStatus:
 		switch {
 		case it.minutes == -1:

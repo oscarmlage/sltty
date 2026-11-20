@@ -553,7 +553,7 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for _, n := range msg.names {
 			m.imgs.custom[n] = true
 		}
-		if p := m.picker; p != nil && p.kind == pickReact && len(msg.names) > 0 {
+		if p := m.picker; p != nil && (p.kind == pickReact || p.kind == pickEmoji) && len(msg.names) > 0 {
 			m.refreshPicker() // what was typed may name one
 		}
 		return m, nil

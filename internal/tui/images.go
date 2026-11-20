@@ -163,7 +163,7 @@ func (m *model) imageCmds() tea.Cmd {
 			custom(sec.emoji)
 		}
 	}
-	if p := m.picker; p != nil && p.kind == pickReact {
+	if p := m.picker; p != nil && (p.kind == pickReact || p.kind == pickEmoji) {
 		for _, it := range p.items[p.first:min(len(p.items), p.first+pickerRows)] {
 			if strings.HasPrefix(it.emoji, ":") {
 				custom(it.emoji)

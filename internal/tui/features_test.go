@@ -2,6 +2,7 @@ package tui
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -20,6 +21,19 @@ func TestDefaultKeymapIsValid(t *testing.T) {
 	}
 	if _, err := newKeymap(cfg.Keys); err != nil {
 		t.Fatalf("`sltty keys` output does not load back: %v", err)
+	}
+}
+
+func TestKeysOutputIncludesConfigurableEmojiAndWho(t *testing.T) {
+	var cfg struct{ Keys map[string][]string }
+	if err := json.Unmarshal([]byte(DefaultsJSON()), &cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.Keys["emoji"]; !slices.Equal(got, []string{"ctrl+e"}) {
+		t.Fatalf("emoji keys: %v", got)
+	}
+	if _, ok := cfg.Keys["who"]; !ok {
+		t.Fatal("who is missing from sltty keys")
 	}
 }
 
