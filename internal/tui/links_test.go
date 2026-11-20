@@ -127,6 +127,15 @@ func TestClickOpensTheLinkUnderIt(t *testing.T) {
 	t.Skip("demo data draws no link in tools-team")
 }
 
+func TestLinksYanksTheSelectedURL(t *testing.T) {
+	m := newTest(t)
+	m.openLinks(&chat.Message{Text: "https://example.com/a https://example.com/b"})
+	press(m, "down", "y")
+	if !m.help || m.status != "copied link" {
+		t.Fatalf("link yank: help %v status %q", m.help, m.status)
+	}
+}
+
 func TestLinksKeyTwiceOpensTheOnlyLink(t *testing.T) {
 	var opened []string
 	old := openURL

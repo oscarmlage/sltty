@@ -17,8 +17,8 @@ import (
 )
 
 // hintKeys label the links: the first nine also answer to 1-9. Letters that
-// navigate the list (j, k, h, l, g, q, o, r, t, x) are left out.
-const hintKeys = "asdfewcmpuiyvbnz"
+// navigate the list or copy its selected URL (y) are left out.
+const hintKeys = "asdfewcmpuivbnz"
 
 type link struct{ label, url string }
 
@@ -110,6 +110,17 @@ func (m *model) openLinks(msg *chat.Message) {
 // key again, when there is only one) stands for.
 func (m *model) linkKey(k string, a action) (tea.Cmd, bool) {
 	s := m.sheet
+	if k == "y" {
+		rows := s.visible()
+		if s.cursor < len(rows) && rows[s.cursor][0] != "" {
+			i := strings.Index(hintKeys, rows[s.cursor][0][:1])
+			if i >= 0 && i < len(s.links) {
+				m.status = "copied link"
+				return tea.SetClipboard(s.links[i]), true
+			}
+		}
+		return nil, true
+	}
 	i := -1
 	switch {
 	case len(k) == 1 && k >= "1" && k <= "9":

@@ -7,7 +7,7 @@ Highlights: `j/k` move everywhere (chats, messages, thread, the lists of
 `ctrl+k` / `ctrl+f` / `r` / `T`), `h/l` panes, `enter` opens a thread (on Telegram it
 replies to the message, quoting it in the chat; `t` opens its thread), `R`
 shows who reacted (tabs by emoji), `r` reacts (the usual few; typing finds any of Slack's
-emoji and the workspace's own, as in slk), `ctrl+e` while writing opens an emoji picker (including Slack workspace emoji), and `:who` lists the open channel's members where the service permits it (Slack, and Telegram groups), `o` lists the message's links and opens one with a hint key (`a s d f…`
+emoji and the workspace's own, as in slk), `ctrl+e` while writing opens an emoji picker (including Slack workspace emoji), and `:who` lists the open channel's members where the service permits it (Slack, and Telegram groups), `y` copies the selected message, while in `o`'s link list it copies the selected URL; `o` lists the message's links and opens one with a hint key (`a s d f…`
 or `1`-`9`, no mouse needed; with a single link `o o` opens it; it uses `open` / `xdg-open`), `v` opens the message's picture
 full screen, `e` edits your message (`↑` in an empty composer
 edits your last one), `u` toggles read / unread (on a message: unread from
@@ -116,6 +116,7 @@ scoped: a key in **NORMAL** can mean something different while typing in
 | Messages | NORMAL | `edit` | `e` | edit your message |
 | Messages | NORMAL | `toggle_read` | `u` | mark read / unread from here |
 | Messages | NORMAL | `links` | `o` | list the message's links |
+| Messages | NORMAL | `yank` | `y` | copy selected message |
 | Messages | NORMAL | `view_picture` | `v` | view the message's picture full size |
 | Messages | NORMAL | `insert` | `i`, `a` | write (INSERT mode) |
 | Messages | NORMAL | `back` | `esc`, `x` | back, close |

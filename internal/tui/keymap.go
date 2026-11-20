@@ -82,6 +82,7 @@ const (
 	actRefresh     action = "refresh"
 	actEmoji       action = "emoji"
 	actWho         action = "who"
+	actYank        action = "yank"
 )
 
 type binding struct {
@@ -122,6 +123,7 @@ var defaults = []binding{
 	{actEdit, scNormal, "Messages", "edit your message", []string{"e"}},
 	{actToggleRead, scNormal, "Messages", "mark read / unread (from here)", []string{"u"}},
 	{actLinks, scNormal, "Messages", "list the message's links; a key opens one (a s d f… or 1-9)", []string{"o"}},
+	{actYank, scNormal, "Messages", "copy selected message", []string{"y"}},
 	{actView, scNormal, "Messages", "the message's picture, full size (or a click on it)", []string{"v"}},
 	{actInsert, scNormal, "Messages", "write (INSERT mode)", []string{"i", "a"}},
 	{actBack, scNormal, "Messages", "back, close", []string{"esc", "x"}},

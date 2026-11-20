@@ -298,6 +298,14 @@ func (m *model) paneAction(a action) tea.Cmd {
 	if a == actWho {
 		return m.who()
 	}
+	if a == actYank {
+		if msg := m.target(); msg != nil {
+			m.status = "copied message"
+			return tea.SetClipboard(msg.Text)
+		}
+		m.status = "no message selected"
+		return nil
+	}
 	if a == actThread {
 		if m.focus == paneChat && m.view == sideConv {
 			return m.openThread()
