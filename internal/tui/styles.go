@@ -16,8 +16,8 @@ var (
 	reactStyle, reactMine, dayStyle, ruleStyle, selMark, openMark, keyStyle      lipgloss.Style
 	errStyle, editTitle, titleStyle, keyCap, helpGroup                           lipgloss.Style
 
-	normalPill, insertPill, statusWhere, offlinePill   lipgloss.Style
-	dividerStyle, dragStyle, boxBorder, boxBorderFocus lipgloss.Style
+	normalPill, insertPill, statusWhere, offlinePill, copiedPill lipgloss.Style
+	dividerStyle, dragStyle, boxBorder, boxBorderFocus           lipgloss.Style
 
 	newRule, newStyle, scopeChip, commandPill, onDot, spinStyle lipgloss.Style
 
@@ -90,6 +90,7 @@ func applyTheme(t Theme) {
 	normalPill = lipgloss.NewStyle().Background(c(t.Primary)).Foreground(c(cmpOr(t.Background, "#000000"))).Bold(true).Padding(0, 1)
 	insertPill = lipgloss.NewStyle().Background(c(t.Accent)).Foreground(c("#000000")).Bold(true).Padding(0, 1)
 	offlinePill = lipgloss.NewStyle().Background(c(t.Error)).Foreground(c("#ffffff")).Bold(true).Padding(0, 1)
+	copiedPill = lipgloss.NewStyle().Background(c(t.Accent)).Foreground(c("#000000")).Bold(true).Padding(0, 1)
 	statusWhere = fg(t.Text).Bold(true)
 
 	dividerStyle = fg(t.Border)

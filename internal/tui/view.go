@@ -128,6 +128,7 @@ func (m *model) render() string {
 	out = append(out, paint(m.statusLine(), m.width, paneBg))
 	m.overlayLoading(out)
 	m.overlayConnection(out)
+	m.overlayCopied(out)
 	if m.picker != nil && m.picker.kind != pickTheme || m.help || m.quitting {
 		m.backdrop(out) // not under the theme picker: it previews the theme
 	}
@@ -155,6 +156,15 @@ func (m *model) overlayConnection(rows []string) {
 		return
 	}
 	bubble := offlinePill.Render("● Offline")
+	m.float(rows, []string{bubble}, max(0, m.width-lipgloss.Width(bubble)-1), 0)
+}
+
+// overlayCopied makes clipboard feedback visible above the conversation.
+func (m *model) overlayCopied(rows []string) {
+	if !strings.HasPrefix(m.status, "copied ") || len(rows) == 0 {
+		return
+	}
+	bubble := copiedPill.Render("✓ " + m.status)
 	m.float(rows, []string{bubble}, max(0, m.width-lipgloss.Width(bubble)-1), 0)
 }
 
