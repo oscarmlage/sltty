@@ -17,6 +17,8 @@ import (
 
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/oscarmlage/sltty/internal/chat"
 )
@@ -364,8 +366,12 @@ func (m *model) suggestLines(in *textarea.Model, w int) []string {
 			mark, name = modalMark.Render("▌")+" ", modalSel.Render(prefix+p.Name)
 		}
 		line := mark + name
-		if p.Full != "" && !strings.EqualFold(p.Full, p.Name) {
-			line += dimStyle.Render("  " + p.Full)
+		// Topics may contain newlines (and terminal control-like whitespace).
+		// A suggestion must always occupy exactly one row above the composer.
+		full := strings.Join(strings.Fields(p.Full), " ")
+		if full != "" && !strings.EqualFold(full, p.Name) {
+			room := max(0, w-lipgloss.Width(line)-2)
+			line += dimStyle.Render("  " + ansi.Truncate(full, room, "…"))
 		}
 		out = append(out, paint(line, w, surfaceBg))
 	}
