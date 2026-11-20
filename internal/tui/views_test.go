@@ -69,6 +69,17 @@ func TestUnreadOnlySidebarKeepsSwitcherComplete(t *testing.T) {
 			t.Fatalf("read chat %q in unread-only sidebar", m.convs[it.conv].Name)
 		}
 	}
+	var draft int
+	for i, c := range m.convs {
+		if c.Unread == 0 && i != m.openConv() && !c.Self {
+			draft = i
+			m.drafts[c.ID] = "unsent"
+			break
+		}
+	}
+	if !slices.ContainsFunc(m.sideOrder(), func(it sideItem) bool { return it.kind == sideConv && it.conv == draft }) {
+		t.Fatal("a read conversation with a draft disappeared")
+	}
 	press(m, "ctrl+p")
 	if m.picker == nil {
 		t.Fatal("switcher did not open")

@@ -167,10 +167,10 @@ func (m *model) withVIPs(in []section) []section {
 	return append([]section{vip}, in...)
 }
 
-// unreadSections removes read conversations from the sidebar view only.
-// m.convs stays complete, so the switcher and search always see every chat.
-// The open conversation stays too: reading it (u, or entering it) must not
-// pull the sidebar cursor out from under the user.
+// unreadSections removes read conversations without drafts from the sidebar
+// view only. m.convs stays complete, so the switcher and search always see
+// every chat. The open conversation and a conversation with unsent text stay:
+// reading either must not pull the sidebar cursor out from under the user.
 func (m *model) unreadSections(in []section) []section {
 	if !m.unreadOnly {
 		return in
@@ -179,7 +179,9 @@ func (m *model) unreadSections(in []section) []section {
 	out := make([]section, 0, len(in))
 	for _, s := range in {
 		// The chat with yourself (Saved Messages) is always there too.
-		s.convs = slices.DeleteFunc(s.convs, func(i int) bool { return m.convs[i].Unread == 0 && i != open && !m.convs[i].Self })
+		s.convs = slices.DeleteFunc(s.convs, func(i int) bool {
+			return m.convs[i].Unread == 0 && i != open && !m.convs[i].Self && !m.hasDraft(m.convs[i].ID)
+		})
 		if len(s.convs) > 0 {
 			out = append(out, s)
 		}
