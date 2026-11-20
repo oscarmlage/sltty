@@ -87,6 +87,7 @@ func init() {
 			return nil
 		}},
 		{"who", "", "list members of the open channel or group", func(m *model, _ string) tea.Cmd { return m.who() }},
+		{"link", "", "copy a service link to the selected message", func(m *model, _ string) tea.Cmd { return m.copyMessageLink() }},
 		{"find", "[name]", "jump to a conversation (#channels, @people)", func(m *model, arg string) tea.Cmd {
 			cmd := m.openPicker(pickSwitch, nil)
 			if arg == "" {
@@ -251,6 +252,23 @@ func (m *model) commandKey(msg tea.KeyPressMsg, k string) tea.Cmd {
 }
 
 // who loads the membership list for the open Slack channel or Telegram group.
+func (m *model) copyMessageLink() tea.Cmd {
+	msg := m.target()
+	linker, ok := m.backend.(chat.MessageLinker)
+	if !ok {
+		m.err = "message links are only available on Slack"
+		return nil
+	}
+	if msg == nil || msg.TS == "" || m.convID() == "" {
+		m.err = "select a message first"
+		return nil
+	}
+	return m.call(func(ctx context.Context) tea.Msg {
+		url, err := linker.MessageLink(ctx, m.convID(), msg.TS)
+		return messageLinkMsg{url: url, err: err}
+	})
+}
+
 func (m *model) who() tea.Cmd {
 	c := m.current()
 	members, ok := m.backend.(chat.ChannelMembers)

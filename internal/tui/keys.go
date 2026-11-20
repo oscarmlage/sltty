@@ -331,6 +331,9 @@ func (m *model) paneAction(a action) tea.Cmd {
 	if a == actWho {
 		return m.who()
 	}
+	if a == actCopyLink {
+		return m.copyMessageLink()
+	}
 	if a == actYank {
 		if msg := m.target(); msg != nil {
 			m.status = "copied message"

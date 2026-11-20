@@ -301,6 +301,12 @@ type ChannelMembers interface {
 	Members(ctx context.Context, convID string) ([]Person, error)
 }
 
+// MessageLinker returns a service permalink for a message, when the service
+// has one that can be shared.
+type MessageLinker interface {
+	MessageLink(ctx context.Context, convID, ts string) (string, error)
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error

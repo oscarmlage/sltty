@@ -65,6 +65,19 @@ func users(form url.Values) any {
 	return ok(obj{"user": obj{"name": strings.ToLower(id), "profile": obj{"image_72": "https://avatars.test/" + id}}})
 }
 
+func TestSlackMessageLink(t *testing.T) {
+	s, _ := apiServer(t, map[string]handler{"chat.getPermalink": func(f url.Values) any {
+		if f.Get("channel") != "C1" || f.Get("message_ts") != "123.456" {
+			t.Fatalf("form: %v", f)
+		}
+		return ok(obj{"permalink": "https://acme.slack.com/archives/C1/p123456"})
+	}})
+	got, err := s.MessageLink(context.Background(), "C1", "123.456")
+	if err != nil || got != "https://acme.slack.com/archives/C1/p123456" {
+		t.Fatalf("link %q: %v", got, err)
+	}
+}
+
 func TestSlackMembers(t *testing.T) {
 	s, calls := apiServer(t, map[string]handler{
 		"conversations.members": func(f url.Values) any {

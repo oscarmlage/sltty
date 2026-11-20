@@ -100,6 +100,10 @@ type (
 		msg chat.Message
 		err error
 	}
+	messageLinkMsg struct {
+		url string
+		err error
+	}
 )
 
 // thread is the open thread panel.
@@ -741,6 +745,13 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case typingTick:
 		m.expireTyping()
 		return m, nil
+	case messageLinkMsg:
+		if msg.err != nil {
+			m.err = "message link: " + msg.err.Error()
+			return m, nil
+		}
+		m.status = "copied message link"
+		return m, tea.SetClipboard(msg.url)
 	case changedMsg:
 		if msg.err != nil {
 			m.err = msg.err.Error()

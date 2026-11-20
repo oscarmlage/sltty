@@ -83,6 +83,7 @@ const (
 	actEmoji       action = "emoji"
 	actWho         action = "who"
 	actYank        action = "yank"
+	actCopyLink    action = "copy_link"
 )
 
 type binding struct {
@@ -124,6 +125,7 @@ var defaults = []binding{
 	{actToggleRead, scNormal, "Messages", "mark read / unread (from here)", []string{"u"}},
 	{actLinks, scNormal, "Messages", "list the message's links; a key opens one (a s d f… or 1-9)", []string{"o"}},
 	{actYank, scNormal, "Messages", "copy selected message", []string{"y"}},
+	{actCopyLink, scNormal, "Messages", "copy service link to selected message", []string{"g l"}},
 	{actView, scNormal, "Messages", "the message's picture, full size (or a click on it)", []string{"v"}},
 	{actInsert, scNormal, "Messages", "write (INSERT mode)", []string{"i", "a"}},
 	{actBack, scNormal, "Messages", "back, close", []string{"esc", "x"}},
