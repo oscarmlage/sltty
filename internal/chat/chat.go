@@ -307,6 +307,12 @@ type MessageLinker interface {
 	MessageLink(ctx context.Context, convID, ts string) (string, error)
 }
 
+// LinkFormatter turns Markdown-style links in outgoing text into a service's
+// native link markup.
+type LinkFormatter interface {
+	FormatLinks(text string) string
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error

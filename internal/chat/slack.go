@@ -33,6 +33,7 @@ type Slack struct {
 	meName        string // the user's handle: how their messages are signed
 	hc            *http.Client
 	apiBase       string
+	workspaceURL  string // canonical workspace origin, for shareable permalinks
 	mu            sync.Mutex
 	users         map[string]string
 	peopleDirty   bool // users has names the people cache does not
@@ -66,6 +67,7 @@ func NewSlack(ctx context.Context, creds Credentials) (*Slack, error) {
 	// Enterprise Grid workspaces can reject requests sent to slack.com/api;
 	// auth.test provides their authoritative API host.
 	if u, err := url.Parse(a.URL); err == nil && u.Scheme == "https" && strings.HasSuffix(u.Hostname(), "slack.com") {
+		s.workspaceURL = u.Scheme + "://" + u.Host
 		s.apiBase = strings.TrimRight(u.String(), "/") + "/api/"
 	}
 	s.loadPeople()

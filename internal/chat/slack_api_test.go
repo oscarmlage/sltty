@@ -65,6 +65,13 @@ func users(form url.Values) any {
 	return ok(obj{"user": obj{"name": strings.ToLower(id), "profile": obj{"image_72": "https://avatars.test/" + id}}})
 }
 
+func TestSlackFormatsMarkdownLinks(t *testing.T) {
+	s := &Slack{}
+	if got, want := s.FormatLinks("read [the docs](https://example.com/docs)"), "read <https://example.com/docs|the docs>"; got != want {
+		t.Fatalf("links %q, want %q", got, want)
+	}
+}
+
 func TestSlackMessageLink(t *testing.T) {
 	s, _ := apiServer(t, map[string]handler{"chat.getPermalink": func(f url.Values) any {
 		if f.Get("channel") != "C1" || f.Get("message_ts") != "123.456" {
@@ -86,6 +93,13 @@ func TestSlackMessageLinkFallsBackOnEnterprise(t *testing.T) {
 	want := "https://app.slack.com/client/T1/C1/thread/C1-123456"
 	if err != nil || got != want {
 		t.Fatalf("link %q, want %q: %v", got, want, err)
+	}
+}
+
+func TestSlackMessageLinkUsesWorkspacePermalink(t *testing.T) {
+	s := &Slack{workspaceURL: "https://acme.slack.com"}
+	if got, want := s.clientMessageLink("C1", "123.456"), "https://acme.slack.com/archives/C1/p123456"; got != want {
+		t.Fatalf("link %q, want %q", got, want)
 	}
 }
 

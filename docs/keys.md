@@ -30,7 +30,7 @@ Telegram's members and contacts; `tab` or `enter` picks, `ctrl+n`/`ctrl+p`
 or the arrows move, `esc` closes the list. A picked mention reads `@name`
 and is sent as a real one: it notifies (on Telegram, `@username`, or the
 name linked to the person when they have none). Editing a message keeps its
-mentions. An `@name` typed without picking it is plain text. Standard emoji shortcodes such as `:rocket:` are sent as emoji; Slack workspace emoji stay as `:name:`.
+mentions. An `@name` typed without picking it is plain text. Standard emoji shortcodes such as `:rocket:` are sent as emoji; Slack workspace emoji stay as `:name:`. On Slack, `[words](https://example.com)` sends a native linked label, as in its official client.
 
 Files: drop one on the terminal (Ghostty, kitty, iTerm2 and WezTerm paste
 its path) or `ctrl+v` while writing (a picture in the clipboard, a
