@@ -122,6 +122,21 @@ func (m *model) openKeys() {
 
 // openReactions shows the people behind each reaction on the selected message.
 // Each emoji is a tab so a busy message remains short and keyboard-friendly.
+// openMembers displays a Slack channel's membership in a searchable modal.
+func (m *model) openMembers(c chat.Conversation, people []chat.Person) {
+	rows := make([][2]string, 0, len(people))
+	for _, p := range people {
+		name := "@" + p.Name
+		if p.Full == "" || p.Full == p.Name {
+			rows = append(rows, [2]string{name, ""})
+		} else {
+			rows = append(rows, [2]string{name, p.Full})
+		}
+	}
+	m.sheet = newSheet("Members", "#"+c.Name+fmt.Sprintf(" · %d members", len(people)), rows)
+	m.help = true
+}
+
 func (m *model) openReactions(msg *chat.Message) {
 	if msg == nil || len(msg.Reactions) == 0 {
 		m.status = "no reactions on this message"

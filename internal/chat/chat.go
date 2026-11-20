@@ -295,6 +295,12 @@ type DMOpener interface {
 	OpenDM(ctx context.Context, personID string) (Conversation, error)
 }
 
+// ChannelMembers lists the people in a channel. It is deliberately optional:
+// Slack exposes channel membership, while other services need not.
+type ChannelMembers interface {
+	Members(ctx context.Context, convID string) ([]Person, error)
+}
+
 // Typer is a Backend that tells others the user is typing.
 type Typer interface {
 	Typing(ctx context.Context, convID, rootTS string) error

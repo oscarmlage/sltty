@@ -7,7 +7,9 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf16"
@@ -27,6 +29,85 @@ func (t *Telegram) person(u *tg.User) Person {
 		name = full
 	}
 	return Person{ID: "u" + strconv.FormatInt(u.ID, 10), Name: name, Full: full}
+}
+
+// Members lists every member of a Telegram group or supergroup. Broadcast
+// channels intentionally have no member list: Telegram does not expose their
+// subscribers to ordinary members.
+func (t *Telegram) Members(ctx context.Context, convID string) ([]Person, error) {
+	k, n, err := splitConv(convID)
+	if err != nil {
+		return nil, err
+	}
+	var ids []int64
+	switch k {
+	case 'g':
+		full, err := t.api.MessagesGetFullChat(ctx, n)
+		if err != nil {
+			return nil, err
+		}
+		t.remember(full.Users, full.Chats)
+		if f, ok := full.FullChat.(*tg.ChatFull); ok {
+			if ps, ok := f.Participants.(*tg.ChatParticipants); ok {
+				for _, p := range ps.Participants {
+					ids = append(ids, p.GetUserID())
+				}
+			}
+		}
+	case 'c':
+		if t.isBroadcast(convID) {
+			return nil, fmt.Errorf("Telegram does not expose a channel's subscribers")
+		}
+		peer, err := t.inputPeer(convID)
+		if err != nil {
+			return nil, err
+		}
+		p, ok := peer.(*tg.InputPeerChannel)
+		if !ok {
+			return nil, fmt.Errorf("not a Telegram group")
+		}
+		for offset := 0; ; {
+			r, err := t.api.ChannelsGetParticipants(ctx, &tg.ChannelsGetParticipantsRequest{
+				Channel: &tg.InputChannel{ChannelID: p.ChannelID, AccessHash: p.AccessHash},
+				Filter:  &tg.ChannelParticipantsRecent{}, Offset: offset, Limit: 200,
+			})
+			if err != nil {
+				return nil, err
+			}
+			ps, ok := r.(*tg.ChannelsChannelParticipants)
+			if !ok {
+				break
+			}
+			t.remember(ps.Users, ps.Chats)
+			for _, u := range ps.Users {
+				ids = append(ids, u.GetID())
+			}
+			offset += len(ps.Participants)
+			if offset >= ps.Count || len(ps.Participants) == 0 {
+				break
+			}
+		}
+	default:
+		return nil, fmt.Errorf("open a Telegram group first")
+	}
+	return t.memberPeople(ids), nil
+}
+
+func (t *Telegram) memberPeople(ids []int64) []Person {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	seen := map[int64]bool{}
+	out := make([]Person, 0, len(ids))
+	for _, id := range ids {
+		u, ok := t.users[id]
+		if !ok || u.Deleted || seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, t.person(u))
+	}
+	slices.SortFunc(out, func(a, b Person) int { return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name)) })
+	return out
 }
 
 func (t *Telegram) People(ctx context.Context, convID, query string) ([]Person, error) {

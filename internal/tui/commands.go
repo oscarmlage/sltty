@@ -86,6 +86,7 @@ func init() {
 			m.status = "sltty " + cmpOr(m.opts.Version, "dev") + " · " + m.backend.Workspace()
 			return nil
 		}},
+		{"who", "", "list members of the open channel or group", func(m *model, _ string) tea.Cmd { return m.who() }},
 		{"find", "[name]", "jump to a conversation (#channels, @people)", func(m *model, arg string) tea.Cmd {
 			cmd := m.openPicker(pickSwitch, nil)
 			if arg == "" {
@@ -247,6 +248,24 @@ func (m *model) commandKey(msg tea.KeyPressMsg, k string) tea.Cmd {
 	var cmd tea.Cmd
 	*in, cmd = in.Update(msg)
 	return cmd
+}
+
+// who loads the membership list for the open Slack channel or Telegram group.
+func (m *model) who() tea.Cmd {
+	c := m.current()
+	members, ok := m.backend.(chat.ChannelMembers)
+	if !ok {
+		m.err = "who is available on Slack and Telegram groups"
+		return nil
+	}
+	if c == nil || c.Kind != chat.Channel {
+		m.err = "open a channel or group first"
+		return nil
+	}
+	return m.call(func(ctx context.Context) tea.Msg {
+		people, err := members.Members(ctx, c.ID)
+		return membersMsg{id: c.ID, members: people, err: err}
+	})
 }
 
 func (m *model) runCommand(line string) tea.Cmd {

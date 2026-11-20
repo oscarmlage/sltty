@@ -62,6 +62,11 @@ type (
 		convs []chat.Conversation
 		err   error
 	}
+	membersMsg struct {
+		id      string
+		members []chat.Person
+		err     error
+	}
 	historyMsg struct {
 		id   string
 		msgs []chat.Message
@@ -567,6 +572,15 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	case uv.CellSizeEvent:
 		return m, m.setCell(msg.Width, msg.Height)
+	case membersMsg:
+		if msg.err != nil {
+			m.err = "members: " + msg.err.Error()
+			return m, nil
+		}
+		if c := m.current(); c != nil && c.ID == msg.id {
+			m.openMembers(*c, msg.members)
+		}
+		return m, nil
 	case convsMsg:
 		m.loading = false
 		if msg.err != nil {

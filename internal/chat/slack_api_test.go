@@ -65,6 +65,51 @@ func users(form url.Values) any {
 	return ok(obj{"user": obj{"name": strings.ToLower(id), "profile": obj{"image_72": "https://avatars.test/" + id}}})
 }
 
+func TestSlackMembers(t *testing.T) {
+	s, calls := apiServer(t, map[string]handler{
+		"conversations.members": func(f url.Values) any {
+			if f.Get("cursor") == "next" {
+				return ok(obj{"members": []string{"U3"}})
+			}
+			return ok(obj{"members": []string{"U2", "U1"}, "response_metadata": obj{"next_cursor": "next"}})
+		},
+		"users.info": func(f url.Values) any {
+			id := f.Get("user")
+			return ok(obj{"user": obj{"id": id, "name": strings.ToLower(id), "profile": obj{"real_name": "Person " + id}}})
+		},
+	})
+	people, err := s.Members(context.Background(), "C1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls("conversations.members") != 2 || calls("users.info") != 3 {
+		t.Fatalf("calls: members %d, users %d", calls("conversations.members"), calls("users.info"))
+	}
+	if got := []string{people[0].Name, people[1].Name, people[2].Name}; strings.Join(got, ",") != "u1,u2,u3" {
+		t.Fatalf("members: %+v", people)
+	}
+}
+
+func TestSlackMembersFallsBackToUserBootOnEnterprise(t *testing.T) {
+	s, calls := apiServer(t, map[string]handler{
+		"conversations.members": func(url.Values) any { return obj{"ok": false, "error": "enterprise_is_restricted"} },
+		"client.userBoot": func(url.Values) any {
+			return ok(obj{"channels": []obj{{"id": "C1", "members": []string{"U2", "U1"}}}})
+		},
+		"users.info": func(f url.Values) any {
+			id := f.Get("user")
+			return ok(obj{"user": obj{"id": id, "name": strings.ToLower(id)}})
+		},
+	})
+	people, err := s.Members(context.Background(), "C1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls("client.userBoot") != 1 || len(people) != 2 || people[0].Name != "u1" {
+		t.Fatalf("calls %d, members %+v", calls("client.userBoot"), people)
+	}
+}
+
 func TestNewSlackValidatesTheSession(t *testing.T) {
 	if _, err := NewSlack(context.Background(), Credentials{Token: "xoxc-x"}); err == nil {
 		t.Fatal("a session without cookie is incomplete")
