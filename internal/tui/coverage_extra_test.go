@@ -45,6 +45,29 @@ func TestDragSelectionCopiesAndPaints(t *testing.T) {
 	run(m, tea.MouseReleaseMsg{X: x, Y: y0, Button: tea.MouseLeft})
 }
 
+// The composer uses textarea's selection API, so a paragraph can be selected
+// with the mouse and copied just like message text.
+func TestComposerDragSelectionCopies(t *testing.T) {
+	m := newTest(t)
+	m.goTo(t, "tools-team")
+	m.chatIn.SetValue("first line\nsecond line")
+	m.render()
+	y := m.layout.top + m.layout.composerTop + 1
+	x := m.mainX() + 2
+	run(m, tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft})
+	run(m, tea.MouseMotionMsg{X: x + 5, Y: y + 1, Button: tea.MouseLeft})
+	if m.drag != dragComposerText || !m.chatIn.HasSelection() {
+		t.Fatal("composer drag did not start a selection")
+	}
+	_, cmd := m.Update(tea.MouseReleaseMsg{X: x + 5, Y: y + 1, Button: tea.MouseLeft})
+	if m.drag != 0 || m.status != "copied selection" || cmd == nil {
+		t.Fatalf("release: drag %v status %q cmd %v", m.drag, m.status, cmd != nil)
+	}
+	if got := m.chatIn.SelectedText(); got != "first line\nsecon" {
+		t.Fatalf("selected %q", got)
+	}
+}
+
 func TestSnoozeAndLogSheets(t *testing.T) {
 	m := newTest(t)
 	run(m, m.setSnooze(20)())

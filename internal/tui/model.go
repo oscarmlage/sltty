@@ -238,9 +238,10 @@ type model struct {
 
 	mode       mode
 	focus      pane
-	side       int // sidebar width
-	threadW    int // thread panel width; 0 until first opened
-	drag       int // divider or text selection being dragged
+	side       int             // sidebar width
+	threadW    int             // thread panel width; 0 until first opened
+	drag       int             // divider or text selection being dragged
+	dragInput  *textarea.Model // composer text selection being dragged
 	selectDrag struct {
 		pane           pane
 		startX, startY int // terminal cells, including the frame
@@ -281,6 +282,7 @@ const (
 	dragThread
 	dragComposer
 	dragText
+	dragComposerText
 )
 
 func (m *model) composerH() int { return m.inputRows + 2 }

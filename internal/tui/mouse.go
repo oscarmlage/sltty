@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -42,6 +43,15 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 			return nil
 		}
 		p := m.paneAt(mo.X)
+		if in, x, y, ok := m.composerPoint(p, mo.X, mo.Y-m.layout.top); ok {
+			// textarea supports a native, highlighted selection; it only needs
+			// the TUI to translate the screen coordinates into its local ones.
+			m.focus = p
+			cmd := m.enterInsert()
+			in.BeginSelection(x, y)
+			m.drag, m.dragInput = dragComposerText, in
+			return cmd
+		}
 		if h, ok := m.picAt(p, mo.X, mo.Y-m.layout.top); ok {
 			return m.clickPicture(h)
 		}
@@ -67,8 +77,28 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 			m.setInputRows(m.contentRows() - (mo.Y - m.layout.top) - 2)
 		case dragText:
 			m.selectDrag.endX, m.selectDrag.endY = mo.X, mo.Y
+		case dragComposerText:
+			if in := m.dragInput; in != nil {
+				_, x, y, _ := m.composerPoint(m.paneAt(mo.X), mo.X, mo.Y-m.layout.top)
+				in.ExtendSelection(x, y)
+			}
 		}
 	case tea.MouseReleaseMsg:
+		if m.drag == dragComposerText {
+			in := m.dragInput
+			m.drag, m.dragInput = 0, nil
+			if in == nil {
+				return nil
+			}
+			_, x, y, _ := m.composerPoint(m.paneAt(mo.X), mo.X, mo.Y-m.layout.top)
+			in.ExtendSelection(x, y)
+			in.EndSelection()
+			if text := in.SelectedText(); text != "" {
+				m.status = "copied selection"
+				return tea.SetClipboard(text)
+			}
+			return nil
+		}
 		if m.drag == dragText {
 			d := m.selectDrag
 			m.drag = 0
@@ -83,6 +113,7 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 			return nil
 		}
 		m.drag = 0
+		m.dragInput = nil
 	case tea.MouseWheelMsg:
 		n := map[tea.MouseButton]int{tea.MouseWheelUp: -1, tea.MouseWheelDown: 1}[mo.Button]
 		if n == 0 || m.mode == insert {
@@ -97,6 +128,24 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 		return cmd
 	}
 	return nil
+}
+
+// composerPoint turns a screen position in a composer's editable area into
+// textarea-relative coordinates. Its border/title are deliberately excluded:
+// dragging those keeps resizing the composer.
+func (m *model) composerPoint(p pane, x, y int) (*textarea.Model, int, int, bool) {
+	if p == paneSide || y < m.layout.composerTop+1 || y >= m.layout.composerTop+1+m.inputRows {
+		return nil, 0, 0, false
+	}
+	in, paneX := &m.chatIn, m.mainX()
+	if p == paneThread && m.thread != nil {
+		in, paneX = &m.threadIn, m.threadX()
+	}
+	left := 2 // rounded border and its inner padding
+	if boxed() {
+		left = 1 // filled panels have only their leading padding
+	}
+	return in, x - paneX - left, y - m.layout.composerTop - 1, true
 }
 
 // messageAt returns the message displayed at a content row of a message pane.
