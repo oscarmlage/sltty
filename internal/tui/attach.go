@@ -18,6 +18,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
@@ -143,6 +145,80 @@ func pastedPath(s string) (string, bool) {
 		return "", false
 	}
 	return s, true
+}
+
+// unframePaste removes the left gutter added when copying a rendered terminal
+// message. A heading is sometimes outside the gutter, so a strong majority
+// rather than every line must have it. This avoids treating a lone ▌ in normal
+// prose or code as UI chrome.
+func unframePaste(content string) string {
+	lines := strings.Split(content, "\n")
+	var contentLines, guttered int
+	for _, line := range lines {
+		line = strings.TrimSpace(strings.TrimSuffix(line, "\r"))
+		if line == "" {
+			continue
+		}
+		contentLines++
+		if strings.HasPrefix(line, "▌") {
+			guttered++
+		}
+	}
+	if guttered < 2 || guttered*2 < contentLines {
+		return content
+	}
+	return cleanCopiedText(content)
+}
+
+// cleanCopiedText removes terminal-only rendering from a known sltty message
+// selection. Unlike unframePaste it is deliberately unconditional: a drag can
+// span normal messages and attachment cards, so gutters are not a majority.
+func cleanCopiedText(content string) string {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		cr := strings.HasSuffix(line, "\r")
+		line = strings.TrimSuffix(line, "\r")
+		if strings.TrimSpace(line) == "" {
+			line = ""
+		} else if rest, ok := strings.CutPrefix(line, "▌"); ok {
+			line = strings.TrimLeft(rest, " \t")
+		}
+		lines[i] = stripTerminalImagePlaceholders(line)
+		if cr {
+			lines[i] += "\r"
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func isPrivateUse(r rune) bool {
+	return r >= 0xE000 && r <= 0xF8FF || r >= 0xF0000 && r <= 0xFFFFD || r >= 0x100000 && r <= 0x10FFFD
+}
+
+// stripTerminalImagePlaceholders removes Kitty's private-use image cells and
+// their combining Unicode markers, which leak into a terminal text selection.
+func stripTerminalImagePlaceholders(s string) string {
+	var out strings.Builder
+	for i := 0; i < len(s); {
+		start := i
+		hasPrivateUse := false
+		for i < len(s) {
+			r, n := utf8.DecodeRuneInString(s[i:])
+			if !isPrivateUse(r) && !unicode.IsMark(r) {
+				break
+			}
+			hasPrivateUse = hasPrivateUse || isPrivateUse(r)
+			i += n
+		}
+		if i == start {
+			_, n := utf8.DecodeRuneInString(s[i:])
+			out.WriteString(s[i : i+n])
+			i += n
+		} else if !hasPrivateUse {
+			out.WriteString(s[start:i])
+		}
+	}
+	return out.String()
 }
 
 // pasted takes a paste that names a file as an attachment; ok is false for

@@ -42,6 +42,38 @@ func TestPastedPath(t *testing.T) {
 	}
 }
 
+func TestUnframePaste(t *testing.T) {
+	in := "🚄 title\n▌     first line\n    \n▌     • second line\n"
+	if got, want := unframePaste(in), "🚄 title\nfirst line\n\n• second line\n"; got != want {
+		t.Fatalf("unframed paste = %q, want %q", got, want)
+	}
+	// Pasting into the composer uses the cleaned text too.
+	m := newTest(t)
+	m.goTo(t, "general")
+	press(m, "i")
+	run(m, tea.PasteMsg{Content: "▌   one\n▌   two"})
+	if got := m.chatIn.Value(); got != "one\ntwo" {
+		t.Fatalf("composer paste = %q", got)
+	}
+
+	// Kitty image-cell placeholders must not leak into the text selection.
+	in = "title\n▌   \U0010eeee\u0305photo\n▌   text"
+	if got, want := unframePaste(in), "title\nphoto\ntext"; got != want {
+		t.Fatalf("image placeholders = %q, want %q", got, want)
+	}
+	// A multi-message selection need not have a majority of guttered rows.
+	in = "\U0010eeee\u0305alice\nplain message\n▌   \U0010eeee\u0305attachment"
+	if got, want := cleanCopiedText(in), "alice\nplain message\nattachment"; got != want {
+		t.Fatalf("image placeholders = %q, want %q", got, want)
+	}
+
+	// A genuine gutter character in otherwise normal text must survive.
+	in = "▌ quoted\nnormal"
+	if got := unframePaste(in); got != in {
+		t.Fatalf("ordinary text changed to %q", got)
+	}
+}
+
 func TestDroppingAFileAttachesAndSendsIt(t *testing.T) {
 	m := newTest(t)
 	m.goTo(t, "general")

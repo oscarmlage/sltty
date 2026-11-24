@@ -56,14 +56,21 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 			return m.clickPicture(h)
 		}
 		// A press still selects the message as before, and also begins a
-		// drag-to-copy. A release without movement has no further action.
+		// drag-to-copy. Do not run click's double-click action when the message
+		// is already selected: this press may become a drag.
 		if m.view == sideConv && (p == paneChat || p == paneThread) && m.messageAt(p, mo.Y-m.layout.top) >= 0 {
-			cmd := m.click(mo.X, mo.Y)
+			var cmd tea.Cmd
+			message := m.messageAt(p, mo.Y-m.layout.top)
+			alreadySelected := p == paneChat && message == m.selected() || p == paneThread && m.thread != nil && message == m.thread.sel
+			if !alreadySelected {
+				cmd = m.click(mo.X, mo.Y)
+			}
 			m.drag = dragText
 			m.selectDrag = struct {
 				pane                       pane
 				startX, startY, endX, endY int
-			}{p, mo.X, mo.Y, mo.X, mo.Y}
+				deferClick                 bool
+			}{p, mo.X, mo.Y, mo.X, mo.Y, alreadySelected}
 			return cmd
 		}
 		return m.click(mo.X, mo.Y)
@@ -103,6 +110,9 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 			d := m.selectDrag
 			m.drag = 0
 			if d.startX == mo.X && d.startY == mo.Y {
+				if d.deferClick {
+					return m.click(mo.X, mo.Y) // preserves double-click on an already selected row
+				}
 				return m.clickLink(d.pane, mo.X, mo.Y-m.layout.top) // a click, not a drag: open the link under it
 			}
 			d.endX, d.endY = mo.X, mo.Y
@@ -168,6 +178,7 @@ func (m *model) messageAt(p pane, y int) int {
 func (m *model) draggedText(d struct {
 	pane                       pane
 	startX, startY, endX, endY int
+	deferClick                 bool
 }) string {
 	if d.pane != m.paneAt(d.endX) {
 		return ""
@@ -206,7 +217,10 @@ func (m *model) draggedText(d struct {
 			lines = append(lines, string(r[left:min(right, len(r))]))
 		}
 	}
-	return strings.TrimSpace(strings.Join(lines, "\n"))
+	// The rows contain attachment gutters and Kitty's image placeholders because
+	// they are part of what was drawn. The clipboard, unlike the screen, should
+	// receive the message's readable text.
+	return strings.TrimSpace(cleanCopiedText(strings.Join(lines, "\n")))
 }
 
 func (m *model) paneX(p pane) int {
@@ -217,8 +231,9 @@ func (m *model) paneX(p pane) int {
 }
 
 // paintDragSelection gives the in-progress drag the same visible feedback a
-// terminal text selection has. The selected span is redrawn plainly so ANSI
-// formatting cannot leak through the selection background.
+// terminal text selection has. Keep the original ANSI escapes in the selected
+// span: Kitty encodes an image placement's ID in its placeholder's SGR state,
+// so stripping styling also makes avatars and custom emoji disappear.
 func (m *model) paintDragSelection(lines []string, p pane) {
 	if m.drag != dragText || m.selectDrag.pane != p {
 		return
@@ -248,7 +263,12 @@ func (m *model) paintDragSelection(lines []string, p pane) {
 			continue
 		}
 		to = min(to, len(plain))
-		lines[y] = string(plain[:from]) + dragSelBg + string(plain[from:to]) + "\x1b[0m" + string(plain[to:])
+		// Kitty's image cell is a base rune plus combining row/column markers.
+		// ansi.Cut cannot split that grapheme while retaining its special SGR
+		// foreground (the image ID), so paint the whole touched row instead.
+		// This is also how terminal line selections commonly behave.
+		line := lines[y]
+		lines[y] = paint(line, ansi.StringWidth(line), dragSelBg)
 	}
 }
 

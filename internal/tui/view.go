@@ -278,7 +278,10 @@ func (m *model) chatPane(w, rows int) []string {
 		if m.thread != nil {
 			openRoot = m.thread.root
 		}
-		vis, at, off, pics := m.msgList(msgs, false, w, n, m.chatOff, m.selected(), m.focus == paneChat, openRoot, m.newFrom[c.ID])
+		// While dragging text, the transient drag colour takes precedence over
+		// the persistent selected-message background.
+		focused := m.focus == paneChat && !(m.drag == dragText && m.selectDrag.pane == paneChat)
+		vis, at, off, pics := m.msgList(msgs, false, w, n, m.chatOff, m.selected(), focused, openRoot, m.newFrom[c.ID])
 		m.chatOff = off
 		pad := n - len(vis) // the newest message sits on top of the composer
 		m.addPics(paneChat, pics, paneTop+pad, m.mainX())
@@ -358,7 +361,9 @@ func (m *model) threadPane(w, rows int) []string {
 	if t.msgs == nil {
 		out = append(out, fit(dimStyle.Render(" loading…"), w))
 	} else {
-		vis, at, off, pics := m.msgList(t.msgs, true, w, n, t.off, t.sel, m.focus == paneThread, "", "")
+		// See chatPane: a drag selection is more important than the cursor.
+		focused := m.focus == paneThread && !(m.drag == dragText && m.selectDrag.pane == paneThread)
+		vis, at, off, pics := m.msgList(t.msgs, true, w, n, t.off, t.sel, focused, "", "")
 		t.off = off
 		m.addPics(paneThread, pics, paneTop, m.threadX())
 		m.layout.threadMsg, m.layout.threadText = make([]int, rows), make([]string, rows)

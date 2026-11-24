@@ -45,6 +45,21 @@ func fetch(m *model, cmd tea.Cmd) {
 	}
 }
 
+func TestKittyImagesSurviveDragSelection(t *testing.T) {
+	m := withImages(t, img.Kitty)
+	before := m.render()
+	m.drag = dragText
+	m.selectDrag.pane = paneChat
+	m.selectDrag.startX, m.selectDrag.startY = m.mainX(), paneTop+m.layout.top
+	m.selectDrag.endX, m.selectDrag.endY = m.mainX()+m.mainWidth()-1, m.layout.composerTop-1+m.layout.top
+	out := m.render()
+	for _, p := range m.imgs.pics {
+		if p.id != 0 && strings.Contains(before, kittyColor(p.id)) && !strings.Contains(out, kittyColor(p.id)) {
+			t.Fatalf("drag selection lost Kitty image %d", p.id)
+		}
+	}
+}
+
 func TestKittyImagesAndEmoji(t *testing.T) {
 	m := withImages(t, img.Kitty)
 	p := m.imgs.pics["F1"]

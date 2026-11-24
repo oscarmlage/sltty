@@ -246,6 +246,7 @@ type model struct {
 		pane           pane
 		startX, startY int // terminal cells, including the frame
 		endX, endY     int
+		deferClick     bool // selected row: wait to see whether this becomes a drag
 	}
 	pending    string
 	lastInsert string // the key just typed, for two-key bindings in INSERT
@@ -806,6 +807,21 @@ func (m *model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.PasteMsg:
 		// A file dropped on the terminal arrives as its path: attached.
 		if cmd, ok := m.pasted(msg.Content); ok {
+			return m, cmd
+		}
+		// Copying rendered messages from a terminal includes their left gutter.
+		// msg is a type-switch copy; route the cleaned event directly rather
+		// than changing it and later passing the original tea.Msg below.
+		if content := unframePaste(msg.Content); content != msg.Content {
+			clean := tea.PasteMsg{Content: content}
+			var cmd tea.Cmd
+			switch {
+			case m.picker != nil && m.picker.typing:
+				m.picker.input, cmd = m.picker.input.Update(clean)
+			case m.mode == insert:
+				in := m.activeInput()
+				*in, cmd = in.Update(clean)
+			}
 			return m, cmd
 		}
 	case clipboardMsg:
