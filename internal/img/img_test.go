@@ -47,7 +47,7 @@ func TestCellsAndUpload(t *testing.T) {
 		t.Fatalf("cells %q", ls)
 	}
 	up := Upload(7, make([]byte, 10000), 4, 3)
-	if !strings.Contains(up, "a=t,f=100,t=d,i=7,U=1") || strings.Count(up, "\x1b_G") != 1+4 {
+	if !strings.Contains(up, "a=T,f=100,t=d,i=7,U=1,c=4,r=3") || strings.Count(up, "\x1b_G") != 1+4 {
 		t.Fatalf("upload: %d chunks", strings.Count(up, "\x1b_G"))
 	}
 	if strings.Contains(up, "t=f") || strings.Contains(up, "t=t") {
